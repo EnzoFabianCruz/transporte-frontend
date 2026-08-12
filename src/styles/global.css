@@ -221,6 +221,19 @@ label {
   background: var(--color-surface);
 }
 
+/* Variante con scroll vertical para listas largas (ej. Partes de Trabajo),
+   así los botones de abajo no se salen de la pantalla */
+.table-wrap-scroll {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.table-wrap-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

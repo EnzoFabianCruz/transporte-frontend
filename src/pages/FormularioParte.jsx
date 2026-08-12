@@ -12,19 +12,26 @@ const detalleVacio = {
   codigoDestino: "",
   numViajes: "",
   peso: "",
+  codigoCiclo: "",
+  valorCiclo: "",
+  material: "",
+  phoras: "",
 };
 
 const cabeceraVacia = {
   fechaParte: "",
+  turno: "D",
+  situacionParte: "",
   codigoUnidad: "",
   codigoAnalitico: "",
   horoInicial: "",
+  horoFinal: "",
   kmInicial: "",
+  kmFinal: "",
   horaInicial: "",
   horafinal: "",
-  reportadopor: "",
+  combustible: "",
   supervisadopor: "",
-  situacionParte: "D",
 };
 
 export default function FormularioParte() {
@@ -36,7 +43,10 @@ export default function FormularioParte() {
   const modo = numeroParte ? searchParams.get("modo") || "editar" : "crear"; // "crear" | "editar" | "ver"
   const soloLectura = modo === "ver";
 
-  const [personal, setPersonal] = useState([]);
+  const [operadores, setOperadores] = useState([]);
+  const [supervisores, setSupervisores] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [ciclos, setCiclos] = useState([]);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -45,12 +55,27 @@ export default function FormularioParte() {
   const [cabecera, setCabecera] = useState(cabeceraVacia);
   const [detalles, setDetalles] = useState([{ ...detalleVacio }]);
 
-  // Cargar lista de personal para los selectores
+  // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Ciclo)
   useEffect(() => {
     api
-      .get("/Personal")
-      .then((res) => setPersonal(res.data))
-      .catch(() => setError("No se pudo cargar la lista de personal"));
+      .get("/Personal/operadores")
+      .then((res) => setOperadores(res.data))
+      .catch(() => setError("No se pudo cargar la lista de operadores"));
+
+    api
+      .get("/Personal/supervisores")
+      .then((res) => setSupervisores(res.data))
+      .catch(() => setError("No se pudo cargar la lista de supervisores"));
+
+    api
+      .get("/UnidadesTransporte")
+      .then((res) => setUnidades(res.data))
+      .catch(() => setError("No se pudo cargar la lista de unidades"));
+
+    api
+      .get("/Ciclos")
+      .then((res) => setCiclos(res.data))
+      .catch(() => setError("No se pudo cargar la lista de ciclos"));
   }, []);
 
   // Si hay numeroParte (editar/ver), cargar los datos existentes
@@ -65,15 +90,18 @@ export default function FormularioParte() {
         setCabecera({
           numeroParte: d.numeroParte?.trim() || "",
           fechaParte: d.fechaParte ? d.fechaParte.substring(0, 10) : "",
+          turno: d.turno?.trim() || "D",
+          situacionParte: d.situacionParte?.trim() || "",
           codigoUnidad: d.codigoUnidad?.trim() || "",
           codigoAnalitico: d.codigoAnalitico?.trim() || "",
           horoInicial: d.horoInicial ?? "",
+          horoFinal: d.horoFinal ?? "",
           kmInicial: d.kmInicial ?? "",
+          kmFinal: d.kmFinal ?? "",
           horaInicial: d.horaInicial ?? "",
           horafinal: d.horafinal ?? "",
-          reportadopor: d.reportadopor?.trim() || "",
+          combustible: d.combustible ?? "",
           supervisadopor: d.supervisadopor?.trim() || "",
-          situacionParte: d.situacionParte?.trim() || "D",
         });
         setDetalles(
           d.detalles && d.detalles.length > 0
@@ -86,6 +114,10 @@ export default function FormularioParte() {
                 codigoDestino: det.codigoDestino?.trim() || "",
                 numViajes: det.numViajes ?? "",
                 peso: det.peso ?? "",
+                codigoCiclo: det.codigoCiclo?.trim() || "",
+                valorCiclo: det.valorCiclo?.trim() || "",
+                material: det.material?.trim() || "",
+                phoras: det.phoras ?? "",
               }))
             : [{ ...detalleVacio }]
         );
@@ -116,6 +148,23 @@ export default function FormularioParte() {
     setDetalles(nuevos);
   };
 
+  // Al elegir un Ciclo, autocompleta CodigoOrigen, CodigoDestino y ValorCiclo
+  const handleCicloChange = (index, codigoCiclo) => {
+    const ciclo = ciclos.find((c) => c.codigoCiclo === codigoCiclo);
+    const nuevos = [...detalles];
+    nuevos[index] = {
+      ...nuevos[index],
+      codigoCiclo: codigoCiclo,
+      valorCiclo: ciclo?.valor || "",
+      codigoOrigen: ciclo?.codigoOrigen || "",
+      codigoDestino: ciclo?.codigoDestino || "",
+    };
+    setDetalles(nuevos);
+  };
+
+  // Resuelve el nombre de origen/destino de una línea a partir del ciclo seleccionado
+  const cicloDeDetalle = (d) => ciclos.find((c) => c.codigoCiclo === d.codigoCiclo);
+
   const agregarDetalle = () => setDetalles([...detalles, { ...detalleVacio }]);
 
   const quitarDetalle = (index) => {
@@ -131,10 +180,14 @@ export default function FormularioParte() {
 
     const payload = {
       ...cabecera,
+      situacionParte: cabecera.situacionParte || null,
       horoInicial: cabecera.horoInicial ? parseFloat(cabecera.horoInicial) : null,
+      horoFinal: cabecera.horoFinal ? parseFloat(cabecera.horoFinal) : null,
       kmInicial: cabecera.kmInicial ? parseFloat(cabecera.kmInicial) : null,
+      kmFinal: cabecera.kmFinal ? parseFloat(cabecera.kmFinal) : null,
       horaInicial: cabecera.horaInicial ? parseFloat(cabecera.horaInicial) : null,
       horafinal: cabecera.horafinal ? parseFloat(cabecera.horafinal) : null,
+      combustible: cabecera.combustible ? parseFloat(cabecera.combustible) : null,
       detalles: detalles.map((d) => ({
         dHoroFinal: d.dHoroFinal ? parseFloat(d.dHoroFinal) : null,
         dKmFinal: d.dKmFinal ? parseFloat(d.dKmFinal) : null,
@@ -144,6 +197,10 @@ export default function FormularioParte() {
         codigoDestino: d.codigoDestino || null,
         numViajes: d.numViajes ? parseInt(d.numViajes) : null,
         peso: d.peso ? parseFloat(d.peso) : null,
+        codigoCiclo: d.codigoCiclo || null,
+        valorCiclo: d.valorCiclo || null,
+        material: d.material || null,
+        phoras: d.phoras ? parseFloat(d.phoras) : null,
       })),
     };
 
@@ -230,40 +287,72 @@ export default function FormularioParte() {
                 </div>
                 <div className="field">
                   <label>Turno</label>
-                  <select
-                    className="select"
-                    name="situacionParte"
-                    value={cabecera.situacionParte}
-                    onChange={handleCabeceraChange}
-                  >
-                    <option value="D">Día</option>
-                    <option value="N">Noche</option>
-                  </select>
+                  <div>
+                    <label style={{ marginRight: 12 }}>
+                      <input
+                        type="radio"
+                        name="turno"
+                        value="D"
+                        checked={cabecera.turno === "D"}
+                        onChange={handleCabeceraChange}
+                      />{" "}
+                      Día
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="turno"
+                        value="N"
+                        checked={cabecera.turno === "N"}
+                        onChange={handleCabeceraChange}
+                      />{" "}
+                      Noche
+                    </label>
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label>Placa / Unidad</label>
-                  <input
-                    className="input input-mono"
-                    type="text"
-                    name="codigoUnidad"
-                    value={cabecera.codigoUnidad}
-                    onChange={handleCabeceraChange}
-                    maxLength={6}
-                  />
-                </div>
-                <div className="field">
-                  <label>N° Equipo</label>
-                  <input
-                    className="input input-mono"
-                    type="text"
+                  <label>Operador</label>
+                  <select
+                    className="select"
                     name="codigoAnalitico"
                     value={cabecera.codigoAnalitico}
                     onChange={handleCabeceraChange}
-                    maxLength={6}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {operadores.map((o) => (
+                      <option key={o.codigoPersonal} value={o.codigoPersonal}>
+                        {o.codigoPersonal} - {o.nombreCompleto}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Unidad</label>
+                  <select
+                    className="select"
+                    name="codigoUnidad"
+                    value={cabecera.codigoUnidad}
+                    onChange={handleCabeceraChange}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {unidades.map((u) => (
+                      <option key={u.codigoUnidad} value={u.codigoUnidad}>
+                        {u.codigoUnidad} - {u.volq} - {u.placa}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Situación</label>
+                  <input
+                    className="input"
+                    type="text"
+                    name="situacionParte"
+                    value={cabecera.situacionParte}
+                    readOnly
                   />
                 </div>
-                <div></div>
 
                 <div className="field">
                   <label>Horómetro inicial</label>
@@ -277,6 +366,19 @@ export default function FormularioParte() {
                   />
                 </div>
                 <div className="field">
+                  <label>Horómetro final</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    name="horoFinal"
+                    value={cabecera.horoFinal}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
+                <div></div>
+
+                <div className="field">
                   <label>Km inicial</label>
                   <input
                     className="input"
@@ -284,6 +386,17 @@ export default function FormularioParte() {
                     step="0.01"
                     name="kmInicial"
                     value={cabecera.kmInicial}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
+                <div className="field">
+                  <label>Km final</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    name="kmFinal"
+                    value={cabecera.kmFinal}
                     onChange={handleCabeceraChange}
                   />
                 </div>
@@ -301,7 +414,7 @@ export default function FormularioParte() {
                   />
                 </div>
                 <div className="field">
-                  <label>Hora final</label>
+                  <label>Hora término</label>
                   <input
                     className="input"
                     type="number"
@@ -311,26 +424,20 @@ export default function FormularioParte() {
                     onChange={handleCabeceraChange}
                   />
                 </div>
-                <div></div>
+                <div className="field">
+                  <label>Combustible</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.001"
+                    name="combustible"
+                    value={cabecera.combustible}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
 
                 <div className="field">
-                  <label>Operador (Reportado por)</label>
-                  <select
-                    className="select"
-                    name="reportadopor"
-                    value={cabecera.reportadopor}
-                    onChange={handleCabeceraChange}
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {personal.map((p) => (
-                      <option key={p.codigoPersonal} value={p.codigoPersonal}>
-                        {p.nombreCompleto}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Supervisor</label>
+                  <label>Supervisado</label>
                   <select
                     className="select"
                     name="supervisadopor"
@@ -338,9 +445,9 @@ export default function FormularioParte() {
                     onChange={handleCabeceraChange}
                   >
                     <option value="">-- Seleccione --</option>
-                    {personal.map((p) => (
-                      <option key={p.codigoPersonal} value={p.codigoPersonal}>
-                        {p.nombreCompleto}
+                    {supervisores.map((s) => (
+                      <option key={s.codigoPersonal} value={s.codigoPersonal}>
+                        {s.codigoPersonal} - {s.nombreCompleto}
                       </option>
                     ))}
                   </select>
@@ -362,6 +469,10 @@ export default function FormularioParte() {
                       <th>Destino</th>
                       <th>Viajes</th>
                       <th>Peso</th>
+                      <th>Ciclo</th>
+                      <th>Valor ciclo</th>
+                      <th>Material (texto)</th>
+                      <th>P. Horas</th>
                       {!soloLectura && <th></th>}
                     </tr>
                   </thead>
@@ -407,19 +518,17 @@ export default function FormularioParte() {
                         <td>
                           <input
                             type="text"
-                            name="codigoOrigen"
-                            value={d.codigoOrigen}
-                            onChange={(e) => handleDetalleChange(i, e)}
-                            maxLength={6}
+                            value={d.codigoOrigen ? `${d.codigoOrigen} - ${cicloDeDetalle(d)?.nombreOrigen || ""}` : ""}
+                            readOnly
+                            tabIndex={-1}
                           />
                         </td>
                         <td>
                           <input
                             type="text"
-                            name="codigoDestino"
-                            value={d.codigoDestino}
-                            onChange={(e) => handleDetalleChange(i, e)}
-                            maxLength={6}
+                            value={d.codigoDestino ? `${d.codigoDestino} - ${cicloDeDetalle(d)?.nombreDestino || ""}` : ""}
+                            readOnly
+                            tabIndex={-1}
                           />
                         </td>
                         <td>
@@ -436,6 +545,40 @@ export default function FormularioParte() {
                             step="0.001"
                             name="peso"
                             value={d.peso}
+                            onChange={(e) => handleDetalleChange(i, e)}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            value={d.codigoCiclo}
+                            onChange={(e) => handleCicloChange(i, e.target.value)}
+                          >
+                            <option value="">-- Seleccione --</option>
+                            {ciclos.map((c) => (
+                              <option key={c.codigoCiclo} value={c.codigoCiclo}>
+                                {c.valor}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input type="text" value={d.valorCiclo} readOnly tabIndex={-1} />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            name="material"
+                            value={d.material}
+                            onChange={(e) => handleDetalleChange(i, e)}
+                            maxLength={10}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="0.01"
+                            name="phoras"
+                            value={d.phoras}
                             onChange={(e) => handleDetalleChange(i, e)}
                           />
                         </td>

@@ -96,7 +96,7 @@ export default function ListaPartes() {
 
       {!cargandoInicial && !error && (
         <div style={{ opacity: buscando ? 0.5 : 1, transition: "opacity 0.15s" }}>
-          <div className="table-wrap">
+          <div className="table-wrap table-wrap-scroll">
             <table>
               <thead>
                 <tr>
@@ -135,9 +135,9 @@ export default function ListaPartes() {
                       <td>{p.fechaParte ? new Date(p.fechaParte).toLocaleDateString() : "-"}</td>
                       <td className="cell-mono">{p.codigoUnidad?.trim() || "-"}</td>
                       <td>
-                        {p.situacionParte?.trim() === "D" && <span className="badge badge-day">Día</span>}
-                        {p.situacionParte?.trim() === "N" && <span className="badge badge-night">Noche</span>}
-                        {!p.situacionParte?.trim() && <span className="cell-muted">-</span>}
+                        {p.turno?.trim() === "D" && <span className="badge badge-day">Día</span>}
+                        {p.turno?.trim() === "N" && <span className="badge badge-night">Noche</span>}
+                        {!p.turno?.trim() && <span className="cell-muted">-</span>}
                       </td>
                       <td className="cell-mono">{p.horaInicial ?? "-"}</td>
                       <td className="cell-mono">{p.horafinal ?? "-"}</td>
