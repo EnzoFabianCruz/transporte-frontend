@@ -8,6 +8,8 @@ export default function ListaPartes() {
   const [partes, setPartes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 400); // espera 400ms tras dejar de escribir
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
   const [seleccionado, setSeleccionado] = useState(null);
   const [error, setError] = useState("");
   const [cargandoInicial, setCargandoInicial] = useState(true); // solo la primera carga muestra "Cargando..."
@@ -17,19 +19,22 @@ export default function ListaPartes() {
   const navigate = useNavigate();
   const esAdmin = usuario?.rol === "Admin";
 
-  // Se dispara automáticamente cada vez que cambia el valor "debounced"
+  // Se dispara automáticamente cada vez que cambia el valor "debounced" o las fechas
   useEffect(() => {
-    cargarPartes(busquedaDebounced);
-  }, [busquedaDebounced]);
+    cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
+  }, [busquedaDebounced, fechaDesde, fechaHasta]);
 
-  const cargarPartes = async (textoBusqueda = "") => {
+  const cargarPartes = async (textoBusqueda = "", desde = "", hasta = "") => {
     setBuscando(true);
     setError("");
     setSeleccionado(null);
     try {
-      const respuesta = await api.get("/Formulario", {
-        params: textoBusqueda ? { busqueda: textoBusqueda } : {},
-      });
+      const params = {};
+      if (textoBusqueda) params.busqueda = textoBusqueda;
+      if (desde) params.fechaDesde = desde;
+      if (hasta) params.fechaHasta = hasta;
+
+      const respuesta = await api.get("/Formulario", { params });
       setPartes(respuesta.data);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -52,7 +57,7 @@ export default function ListaPartes() {
 
     try {
       await api.delete(`/Formulario/${seleccionado.trim()}`);
-      cargarPartes(busquedaDebounced);
+      cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
     } catch (err) {
       alert(err.response?.data?.mensaje || "Error al eliminar el parte");
     }
@@ -84,8 +89,40 @@ export default function ListaPartes() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        {busqueda && (
-          <button type="button" className="btn btn-secondary" onClick={() => setBusqueda("")}>
+        <div className="date-filter">
+          <label className="cell-muted" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+            Desde
+          </label>
+          <input
+            className="input"
+            type="date"
+            value={fechaDesde}
+            max={fechaHasta || undefined}
+            onChange={(e) => setFechaDesde(e.target.value)}
+          />
+        </div>
+        <div className="date-filter">
+          <label className="cell-muted" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+            Hasta
+          </label>
+          <input
+            className="input"
+            type="date"
+            value={fechaHasta}
+            min={fechaDesde || undefined}
+            onChange={(e) => setFechaHasta(e.target.value)}
+          />
+        </div>
+        {(busqueda || fechaDesde || fechaHasta) && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              setBusqueda("");
+              setFechaDesde("");
+              setFechaHasta("");
+            }}
+          >
             Limpiar
           </button>
         )}
@@ -148,7 +185,7 @@ export default function ListaPartes() {
             </table>
           </div>
 
-          <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+          <div className="actions-row">
             <button className="btn btn-primary" onClick={() => navigate("/formulario")}>
               + Agregar
             </button>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
+import "../styles/FormularioParte.css";
 
 const detalleVacio = {
   dHoroFinal: "",
@@ -47,6 +48,7 @@ export default function FormularioParte() {
   const [supervisores, setSupervisores] = useState([]);
   const [unidades, setUnidades] = useState([]);
   const [ciclos, setCiclos] = useState([]);
+  const [materiales, setMateriales] = useState([]);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -76,6 +78,11 @@ export default function FormularioParte() {
       .get("/Ciclos")
       .then((res) => setCiclos(res.data))
       .catch(() => setError("No se pudo cargar la lista de ciclos"));
+
+    api
+      .get("/Materiales")
+      .then((res) => setMateriales(res.data))
+      .catch(() => setError("No se pudo cargar la lista de materiales"));
   }, []);
 
   // Si hay numeroParte (editar/ver), cargar los datos existentes
@@ -155,7 +162,7 @@ export default function FormularioParte() {
     nuevos[index] = {
       ...nuevos[index],
       codigoCiclo: codigoCiclo,
-      valorCiclo: ciclo?.valor || "",
+      valorCiclo: ciclo?.horas != null ? String(ciclo.horas) : "",
       codigoOrigen: ciclo?.codigoOrigen || "",
       codigoDestino: ciclo?.codigoDestino || "",
     };
@@ -164,6 +171,18 @@ export default function FormularioParte() {
 
   // Resuelve el nombre de origen/destino de una línea a partir del ciclo seleccionado
   const cicloDeDetalle = (d) => ciclos.find((c) => c.codigoCiclo === d.codigoCiclo);
+
+  // Al elegir un Material, autocompleta el campo "material" (nombreM) con el nombre completo
+  const handleMaterialChange = (index, codigoM) => {
+    const mat = materiales.find((m) => m.codigoM === codigoM);
+    const nuevos = [...detalles];
+    nuevos[index] = {
+      ...nuevos[index],
+      codigoMaterial: codigoM,
+      material: mat?.nombreM || "",
+    };
+    setDetalles(nuevos);
+  };
 
   const agregarDetalle = () => setDetalles([...detalles, { ...detalleVacio }]);
 
@@ -234,7 +253,7 @@ export default function FormularioParte() {
   if (cargandoDatos) return <p className="page cell-muted">Cargando...</p>;
 
   return (
-    <div className="page">
+    <div className="page formulario-parte-page">
       <div className="page-header">
         <h2>{titulo}</h2>
         <div className="user-chip">
@@ -260,11 +279,15 @@ export default function FormularioParte() {
       </button>
 
       <div className="card">
-        <fieldset disabled={soloLectura} style={{ border: "none", margin: 0, padding: 0 }}>
+        <fieldset
+          disabled={soloLectura}
+          style={{ border: "none", margin: 0, padding: 0, width: "100%", minWidth: 0 }}
+        >
           <form onSubmit={handleSubmit}>
             <div className="form-section">
               <div className="form-section-title">Datos generales</div>
               <div className="grid-3">
+                {/* Fila 1: Identificación del parte */}
                 <div className="field">
                   <label>N° Parte</label>
                   <input
@@ -311,6 +334,7 @@ export default function FormularioParte() {
                   </div>
                 </div>
 
+                {/* Fila 2: Personal y unidad */}
                 <div className="field">
                   <label>Operador</label>
                   <select
@@ -322,7 +346,23 @@ export default function FormularioParte() {
                     <option value="">-- Seleccione --</option>
                     {operadores.map((o) => (
                       <option key={o.codigoPersonal} value={o.codigoPersonal}>
-                        {o.codigoPersonal} - {o.nombreCompleto}
+                        {o.nombreCompleto}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Supervisado</label>
+                  <select
+                    className="select"
+                    name="supervisadopor"
+                    value={cabecera.supervisadopor}
+                    onChange={handleCabeceraChange}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {supervisores.map((s) => (
+                      <option key={s.codigoPersonal} value={s.codigoPersonal}>
+                        {s.nombreCompleto}
                       </option>
                     ))}
                   </select>
@@ -338,22 +378,13 @@ export default function FormularioParte() {
                     <option value="">-- Seleccione --</option>
                     {unidades.map((u) => (
                       <option key={u.codigoUnidad} value={u.codigoUnidad}>
-                        {u.codigoUnidad} - {u.volq} - {u.placa}
+                        {u.volq} - {u.placa}
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="field">
-                  <label>Situación</label>
-                  <input
-                    className="input"
-                    type="text"
-                    name="situacionParte"
-                    value={cabecera.situacionParte}
-                    readOnly
-                  />
-                </div>
 
+                {/* Fila 3: Horómetro y combustible */}
                 <div className="field">
                   <label>Horómetro inicial</label>
                   <input
@@ -376,8 +407,19 @@ export default function FormularioParte() {
                     onChange={handleCabeceraChange}
                   />
                 </div>
-                <div></div>
+                <div className="field">
+                  <label>Combustible</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.001"
+                    name="combustible"
+                    value={cabecera.combustible}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
 
+                {/* Fila 4: Kilometraje */}
                 <div className="field">
                   <label>Km inicial</label>
                   <input
@@ -401,84 +443,40 @@ export default function FormularioParte() {
                   />
                 </div>
                 <div></div>
-
-                <div className="field">
-                  <label>Hora inicio</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.01"
-                    name="horaInicial"
-                    value={cabecera.horaInicial}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div className="field">
-                  <label>Hora término</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.01"
-                    name="horafinal"
-                    value={cabecera.horafinal}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div className="field">
-                  <label>Combustible</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.001"
-                    name="combustible"
-                    value={cabecera.combustible}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Supervisado</label>
-                  <select
-                    className="select"
-                    name="supervisadopor"
-                    value={cabecera.supervisadopor}
-                    onChange={handleCabeceraChange}
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {supervisores.map((s) => (
-                      <option key={s.codigoPersonal} value={s.codigoPersonal}>
-                        {s.codigoPersonal} - {s.nombreCompleto}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
 
             <div className="form-section">
               <div className="form-section-title">Detalle de viajes</div>
-              <div className="table-wrap">
+
+              <p className="cell-muted" style={{ fontSize: 12, margin: "4px 0 8px" }}>
+                Desliza el detalle hacia los lados para ver todas las columnas →
+              </p>
+
+              <div className="table-wrap parte-grid">
                 <table className="detail-table">
                   <thead>
                     <tr>
-                      <th>Horóm. final</th>
-                      <th>Km final</th>
-                      <th>Material</th>
-                      <th>Mineral</th>
-                      <th>Origen</th>
-                      <th>Destino</th>
-                      <th>Viajes</th>
-                      <th>Peso</th>
-                      <th>Ciclo</th>
-                      <th>Valor ciclo</th>
-                      <th>Material (texto)</th>
-                      <th>P. Horas</th>
+                      <th>#</th>
+                      <th>HORÓMETRO FINAL</th>
+                      <th>KILOMETRAJE FINAL</th>
+                      <th>CÓDIGO MATERIAL</th>
+                      <th>MATERIAL</th>
+                      <th>NÚMERO DE VALE</th>
+                      <th>CICLO</th>
+                      <th>HORAS</th>
+                      <th>ORIGEN</th>
+                      <th>DESTINO</th>
+                      <th>VIAJES</th>
+                      <th>TOTAL HORAS</th>
+                      <th>PESO</th>
                       {!soloLectura && <th></th>}
                     </tr>
                   </thead>
                   <tbody>
                     {detalles.map((d, i) => (
                       <tr key={i}>
+                        <td>{i + 1}</td>
                         <td>
                           <input
                             type="number"
@@ -498,13 +496,20 @@ export default function FormularioParte() {
                           />
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            name="codigoMaterial"
+                          <select
                             value={d.codigoMaterial}
-                            onChange={(e) => handleDetalleChange(i, e)}
-                            maxLength={3}
-                          />
+                            onChange={(e) => handleMaterialChange(i, e.target.value)}
+                          >
+                            <option value="">-- Seleccione --</option>
+                            {materiales.map((m) => (
+                              <option key={m.codigoM} value={m.codigoM}>
+                                {m.abreviatura}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input type="text" value={d.material} readOnly tabIndex={-1} />
                         </td>
                         <td>
                           <input
@@ -513,39 +518,6 @@ export default function FormularioParte() {
                             value={d.codigoMineral}
                             onChange={(e) => handleDetalleChange(i, e)}
                             maxLength={30}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={d.codigoOrigen ? `${d.codigoOrigen} - ${cicloDeDetalle(d)?.nombreOrigen || ""}` : ""}
-                            readOnly
-                            tabIndex={-1}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={d.codigoDestino ? `${d.codigoDestino} - ${cicloDeDetalle(d)?.nombreDestino || ""}` : ""}
-                            readOnly
-                            tabIndex={-1}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            name="numViajes"
-                            value={d.numViajes}
-                            onChange={(e) => handleDetalleChange(i, e)}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            step="0.001"
-                            name="peso"
-                            value={d.peso}
-                            onChange={(e) => handleDetalleChange(i, e)}
                           />
                         </td>
                         <td>
@@ -567,10 +539,25 @@ export default function FormularioParte() {
                         <td>
                           <input
                             type="text"
-                            name="material"
-                            value={d.material}
+                            value={d.codigoOrigen ? cicloDeDetalle(d)?.nombreOrigen || "" : ""}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={d.codigoDestino ? cicloDeDetalle(d)?.nombreDestino || "" : ""}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            name="numViajes"
+                            value={d.numViajes}
                             onChange={(e) => handleDetalleChange(i, e)}
-                            maxLength={10}
                           />
                         </td>
                         <td>
@@ -579,6 +566,15 @@ export default function FormularioParte() {
                             step="0.01"
                             name="phoras"
                             value={d.phoras}
+                            onChange={(e) => handleDetalleChange(i, e)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="0.001"
+                            name="peso"
+                            value={d.peso}
                             onChange={(e) => handleDetalleChange(i, e)}
                           />
                         </td>

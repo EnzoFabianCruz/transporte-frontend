@@ -1,0 +1,122 @@
+/* Estilos de la grilla de "Detalle de viajes" en FormularioParte.
+   Pensados para uso en tablet: celdas con área táctil de 44px,
+   scroll horizontal cuando la tabla no entra, encabezado sticky. */
+
+.parte-grid {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #c9c9c9;
+  border-radius: 6px;
+}
+
+.parte-grid table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 980px; /* evita que las columnas se aplasten en tablet; se scrollea horizontal */
+  font-size: 13px;
+  background: #fff;
+}
+
+.parte-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef1f5;
+  border: 1px solid #c9c9c9;
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #3a3a3a;
+}
+
+.parte-grid tbody td {
+  border: 1px solid #e0e0e0;
+  padding: 0;
+  text-align: center;
+  height: 44px; /* alto pensado para dedo, no solo mouse */
+  min-width: 90px;
+}
+
+.parte-grid tbody td:first-child {
+  background: #f5f6f8;
+  font-weight: 700;
+  width: 36px;
+  min-width: 36px;
+  color: #555;
+}
+
+.parte-grid tbody tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+.parte-grid tbody tr:nth-child(even) td:first-child {
+  background: #f0f1f3;
+}
+
+.parte-grid tbody tr:hover td {
+  background: #eef4ff;
+}
+
+.parte-grid td input,
+.parte-grid td select {
+  width: 100%;
+  height: 44px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 13px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  color: #222;
+}
+
+.parte-grid td input[type="number"] {
+  text-align: right;
+  padding-right: 10px;
+}
+
+.parte-grid td select {
+  cursor: pointer;
+}
+
+.parte-grid td input:focus,
+.parte-grid td select:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #2f6fdb;
+  background: #f2f7ff;
+  position: relative;
+  z-index: 1;
+}
+
+.parte-grid td input[readOnly] {
+  color: #666;
+  background: #fbfbfb;
+}
+
+.parte-grid .row-remove {
+  width: 36px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: #c0392b;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.parte-grid .row-remove:hover {
+  background: #fdeaea;
+}
+
+/* Tablets: un poco más compacto pero sin perder área táctil */
+@media (max-width: 1024px) {
+  .parte-grid table {
+    font-size: 12.5px;
+  }
+  .parte-grid thead th {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+}

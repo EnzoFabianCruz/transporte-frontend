@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import ListaPartes from "./pages/ListaPartes";
 import FormularioParte from "./pages/FormularioParte";
 
+
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" />;

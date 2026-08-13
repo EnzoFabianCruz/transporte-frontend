@@ -64,9 +64,9 @@ label {
 
 /* ===== LAYOUT ===== */
 .page {
-  max-width: 1040px;
+  width: 100%;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 32px clamp(16px, 3vw, 56px) 64px;
 }
 
 .page--narrow {
@@ -76,13 +76,16 @@ label {
 
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .user-chip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   font-size: 13px;
@@ -93,13 +96,48 @@ label {
   color: var(--color-text);
 }
 
+/* Tablet */
+@media (max-width: 900px) {
+  .page {
+    padding-top: 24px;
+    padding-bottom: 48px;
+  }
+}
+
+/* Celular */
+@media (max-width: 560px) {
+  .page {
+    padding-top: 18px;
+    padding-bottom: 40px;
+  }
+  .page--narrow {
+    padding-top: 48px;
+  }
+  .page-header h2 {
+    font-size: 18px;
+  }
+}
+
 /* ===== CARD ===== */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  padding: 28px;
+  padding: 32px 36px;
+}
+
+@media (max-width: 900px) {
+  .card {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
 }
 
 /* ===== BUTTONS ===== */
@@ -164,6 +202,15 @@ label {
   justify-content: center;
 }
 
+/* Fila de botones de acción (ej. Agregar/Modificar/Consultar/Eliminar):
+   se envuelve en varias líneas en pantallas chicas en vez de desbordar */
+.actions-row {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /* ===== INPUTS ===== */
 .field {
   margin-bottom: 16px;
@@ -205,20 +252,48 @@ label {
 /* ===== SEARCH BAR ===== */
 .searchbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 20px;
 }
 
 .searchbar .input {
-  flex: 1;
+  flex: 1 1 220px;
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.date-filter .input {
+  flex: 0 0 auto;
+  width: 150px;
+}
+
+@media (max-width: 560px) {
+  .searchbar .input {
+    flex: 1 1 100%;
+  }
+  .date-filter {
+    flex: 1 1 100%;
+  }
+  .date-filter .input {
+    flex: 1 1 auto;
+    width: auto;
+  }
 }
 
 /* ===== TABLE ===== */
 .table-wrap {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  overflow: hidden;
   background: var(--color-surface);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Variante con scroll vertical para listas largas (ej. Partes de Trabajo),
@@ -232,6 +307,12 @@ label {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+/* Ancho mínimo para que las columnas sigan siendo legibles en celular;
+   por debajo de eso, se scrollea horizontal en vez de aplastarse */
+.table-wrap-scroll table {
+  min-width: 620px;
 }
 
 table {
@@ -343,43 +424,16 @@ tbody tr.is-selected {
   gap: 16px;
 }
 
-/* ===== DETAIL TABLE (viajes) ===== */
-.detail-table input {
-  width: 100%;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  padding: 7px 8px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+@media (max-width: 900px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.detail-table input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
-.detail-table th {
-  font-size: 10.5px;
-  padding: 8px 6px;
-}
-
-.detail-table td {
-  padding: 6px;
-}
-
-.row-remove {
-  background: transparent;
-  border: none;
-  color: var(--color-danger);
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 4px;
-}
-.row-remove:hover {
-  color: var(--color-danger-hover);
+@media (max-width: 560px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== MESSAGES ===== */
