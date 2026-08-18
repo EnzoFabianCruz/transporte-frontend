@@ -211,6 +211,36 @@ label {
   gap: 10px;
 }
 
+/* ===== NAV entre secciones (Parte de Trabajo / Parte de Parada) ===== */
+.seccion-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.seccion-nav-link {
+  display: inline-block;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.seccion-nav-link:hover {
+  color: var(--color-text);
+}
+
+.seccion-nav-link.is-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
 /* ===== INPUTS ===== */
 .field {
   margin-bottom: 16px;

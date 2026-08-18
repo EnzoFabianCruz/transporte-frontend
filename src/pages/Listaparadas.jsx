@@ -5,8 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import SeccionNav from "../components/SeccionNav";
 
-export default function ListaPartes() {
-  const [partes, setPartes] = useState([]);
+export default function ListaParadas() {
+  const [paradas, setParadas] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const busquedaDebounced = useDebounce(busqueda, 400); // espera 400ms tras dejar de escribir
   const [fechaDesde, setFechaDesde] = useState("");
@@ -16,7 +16,7 @@ export default function ListaPartes() {
   const [cargandoInicial, setCargandoInicial] = useState(true); // solo la primera carga muestra "Cargando..."
   const [buscando, setBuscando] = useState(false); // búsquedas posteriores solo bajan la opacidad
 
-  // Catálogos para resolver nombres a partir de los códigos que trae cada parte
+  // Catálogos para resolver nombres a partir de los códigos que trae cada parada
   const [unidades, setUnidades] = useState([]);
   const [operadores, setOperadores] = useState([]);
 
@@ -24,7 +24,7 @@ export default function ListaPartes() {
   const navigate = useNavigate();
   const esAdmin = usuario?.rol === "Admin";
 
-  // Carga los catálogos una sola vez (igual que en FormularioParte)
+  // Carga los catálogos una sola vez (igual que en ListaPartes)
   useEffect(() => {
     api
       .get("/UnidadesTransporte")
@@ -50,10 +50,10 @@ export default function ListaPartes() {
 
   // Se dispara automáticamente cada vez que cambia el valor "debounced" o las fechas
   useEffect(() => {
-    cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
+    cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
   }, [busquedaDebounced, fechaDesde, fechaHasta]);
 
-  const cargarPartes = async (textoBusqueda = "", desde = "", hasta = "") => {
+  const cargarParadas = async (textoBusqueda = "", desde = "", hasta = "") => {
     setBuscando(true);
     setError("");
     setSeleccionado(null);
@@ -63,13 +63,13 @@ export default function ListaPartes() {
       if (desde) params.fechaDesde = desde;
       if (hasta) params.fechaHasta = hasta;
 
-      const respuesta = await api.get("/Formulario", { params });
-      setPartes(respuesta.data);
+      const respuesta = await api.get("/ParteParada", { params });
+      setParadas(respuesta.data);
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Tu sesión expiró, vuelve a iniciar sesión");
       } else {
-        setError("No se pudo cargar la lista de partes");
+        setError("No se pudo cargar la lista de paradas");
       }
     } finally {
       setBuscando(false);
@@ -80,22 +80,22 @@ export default function ListaPartes() {
   const handleEliminar = async () => {
     if (!seleccionado) return;
     const confirmar = window.confirm(
-      `¿Seguro que deseas eliminar el parte N° ${seleccionado.trim()}? Esta acción no se puede deshacer.`
+      `¿Seguro que deseas eliminar la parada N° ${seleccionado.trim()}? Esta acción no se puede deshacer.`
     );
     if (!confirmar) return;
 
     try {
-      await api.delete(`/Formulario/${seleccionado.trim()}`);
-      cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
+      await api.delete(`/ParteParada/${seleccionado.trim()}`);
+      cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
     } catch (err) {
-      alert(err.response?.data?.mensaje || "Error al eliminar el parte");
+      alert(err.response?.data?.mensaje || "Error al eliminar la parada");
     }
   };
 
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Partes de Trabajo</h2>
+        <h2>Partes de Parada</h2>
         <div className="user-chip">
           <span>
             <strong>{usuario?.nombre || usuario?.nombreUsuario}</strong>{" "}
@@ -116,7 +116,7 @@ export default function ListaPartes() {
         <input
           className="input"
           type="text"
-          placeholder="Buscar por N° parte, unidad, código, operador, turno..."
+          placeholder="Buscar por N° parada, unidad, código, operador, turno..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
@@ -169,7 +169,7 @@ export default function ListaPartes() {
               <thead>
                 <tr>
                   <th style={{ width: 32 }}></th>
-                  <th>N° Parte</th>
+                  <th>N° Parada</th>
                   <th>Fecha</th>
                   <th>Unidad</th>
                   <th>Turno</th>
@@ -177,29 +177,29 @@ export default function ListaPartes() {
                 </tr>
               </thead>
               <tbody>
-                {partes.length === 0 ? (
+                {paradas.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
-                      <div className="empty-state">No hay partes que coincidan con la búsqueda</div>
+                      <div className="empty-state">No hay paradas que coincidan con la búsqueda</div>
                     </td>
                   </tr>
                 ) : (
-                  partes.map((p) => (
+                  paradas.map((p) => (
                     <tr
-                      key={p.numeroParte}
-                      onClick={() => setSeleccionado(p.numeroParte)}
-                      className={seleccionado === p.numeroParte ? "is-selected" : ""}
+                      key={p.numeroParada}
+                      onClick={() => setSeleccionado(p.numeroParada)}
+                      className={seleccionado === p.numeroParada ? "is-selected" : ""}
                     >
                       <td>
                         <input
                           type="radio"
                           name="seleccion"
-                          checked={seleccionado === p.numeroParte}
-                          onChange={() => setSeleccionado(p.numeroParte)}
+                          checked={seleccionado === p.numeroParada}
+                          onChange={() => setSeleccionado(p.numeroParada)}
                         />
                       </td>
-                      <td className="cell-mono">{p.numeroParte?.trim()}</td>
-                      <td>{p.fechaParte ? new Date(p.fechaParte).toLocaleDateString() : "-"}</td>
+                      <td className="cell-mono">{p.numeroParada?.trim()}</td>
+                      <td>{p.fechaParada ? new Date(p.fechaParada).toLocaleDateString() : "-"}</td>
                       <td className="cell-mono">
                         {volquetePorCodigo[p.codigoUnidad?.trim()] || "-"}
                       </td>
@@ -219,21 +219,13 @@ export default function ListaPartes() {
           </div>
 
           <div className="actions-row">
-            <button className="btn btn-primary" onClick={() => navigate("/formulario")}>
+            <button className="btn btn-primary" disabled title="Disponible próximamente">
               + Agregar
             </button>
-            <button
-              className="btn btn-secondary"
-              disabled={!seleccionado}
-              onClick={() => navigate(`/formulario/${seleccionado.trim()}?modo=editar`)}
-            >
+            <button className="btn btn-secondary" disabled title="Disponible próximamente">
               Modificar
             </button>
-            <button
-              className="btn btn-secondary"
-              disabled={!seleccionado}
-              onClick={() => navigate(`/formulario/${seleccionado.trim()}?modo=ver`)}
-            >
+            <button className="btn btn-secondary" disabled title="Disponible próximamente">
               Consultar
             </button>
             {esAdmin && (
@@ -242,6 +234,10 @@ export default function ListaPartes() {
               </button>
             )}
           </div>
+          <p className="cell-muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+            El formulario de Parte de Parada (Agregar/Modificar/Consultar) todavía no está disponible — por ahora solo
+            se puede consultar la lista y eliminar registros existentes.
+          </p>
         </div>
       )}
     </div>
