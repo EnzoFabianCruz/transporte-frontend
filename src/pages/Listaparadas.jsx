@@ -4,6 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import SeccionNav from "../components/SeccionNav";
+import { estadoLabel, estadoBadgeClass } from "../utils/estado";
 
 export default function ListaParadas() {
   const [paradas, setParadas] = useState([]);
@@ -174,12 +175,13 @@ export default function ListaParadas() {
                   <th>Unidad</th>
                   <th>Turno</th>
                   <th>Operador</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {paradas.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="empty-state">No hay paradas que coincidan con la búsqueda</div>
                     </td>
                   </tr>
@@ -211,6 +213,11 @@ export default function ListaParadas() {
                       <td className="cell-mono">
                         {operadorPorCodigo[p.codigoAnalitico?.trim()] || "-"}
                       </td>
+                      <td>
+                        <span className={estadoBadgeClass(p.situacionParada)}>
+                          {estadoLabel(p.situacionParada)}
+                        </span>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -219,13 +226,21 @@ export default function ListaParadas() {
           </div>
 
           <div className="actions-row">
-            <button className="btn btn-primary" disabled title="Disponible próximamente">
+            <button className="btn btn-primary" onClick={() => navigate("/formulario-parada")}>
               + Agregar
             </button>
-            <button className="btn btn-secondary" disabled title="Disponible próximamente">
+            <button
+              className="btn btn-secondary"
+              disabled={!seleccionado}
+              onClick={() => navigate(`/formulario-parada/${seleccionado.trim()}?modo=editar`)}
+            >
               Modificar
             </button>
-            <button className="btn btn-secondary" disabled title="Disponible próximamente">
+            <button
+              className="btn btn-secondary"
+              disabled={!seleccionado}
+              onClick={() => navigate(`/formulario-parada/${seleccionado.trim()}?modo=ver`)}
+            >
               Consultar
             </button>
             {esAdmin && (
@@ -234,10 +249,6 @@ export default function ListaParadas() {
               </button>
             )}
           </div>
-          <p className="cell-muted" style={{ fontSize: 12.5, marginTop: 10 }}>
-            El formulario de Parte de Parada (Agregar/Modificar/Consultar) todavía no está disponible — por ahora solo
-            se puede consultar la lista y eliminar registros existentes.
-          </p>
         </div>
       )}
     </div>

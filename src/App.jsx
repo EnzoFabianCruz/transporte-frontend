@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import ListaPartes from "./pages/ListaPartes";
 import ListaParadas from "./pages/ListaParadas";
 import FormularioParte from "./pages/FormularioParte";
+import FormularioParada from "./pages/FormularioParada";
 
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
@@ -18,6 +19,8 @@ function AppRoutes() {
       <Route path="/paradas" element={<RutaProtegida><ListaParadas /></RutaProtegida>} />
       <Route path="/formulario" element={<RutaProtegida><FormularioParte /></RutaProtegida>} />
       <Route path="/formulario/:numeroParte" element={<RutaProtegida><FormularioParte /></RutaProtegida>} />
+      <Route path="/formulario-parada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
+      <Route path="/formulario-parada/:numeroParada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

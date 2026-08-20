@@ -4,6 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import SeccionNav from "../components/SeccionNav";
+import { estadoLabel, estadoBadgeClass } from "../utils/estado";
 
 export default function ListaPartes() {
   const [partes, setPartes] = useState([]);
@@ -174,12 +175,13 @@ export default function ListaPartes() {
                   <th>Unidad</th>
                   <th>Turno</th>
                   <th>Operador</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {partes.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="empty-state">No hay partes que coincidan con la búsqueda</div>
                     </td>
                   </tr>
@@ -210,6 +212,11 @@ export default function ListaPartes() {
                       </td>
                       <td className="cell-mono">
                         {operadorPorCodigo[p.codigoAnalitico?.trim()] || "-"}
+                      </td>
+                      <td>
+                        <span className={estadoBadgeClass(p.situacionParte)}>
+                          {estadoLabel(p.situacionParte)}
+                        </span>
                       </td>
                     </tr>
                   ))
