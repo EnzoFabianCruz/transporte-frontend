@@ -171,6 +171,7 @@ export default function ListaParadas() {
                 <tr>
                   <th style={{ width: 32 }}></th>
                   <th>N° Parada</th>
+                  <th>N° Parte</th>
                   <th>Fecha</th>
                   <th>Unidad</th>
                   <th>Turno</th>
@@ -181,7 +182,7 @@ export default function ListaParadas() {
               <tbody>
                 {paradas.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="empty-state">No hay paradas que coincidan con la búsqueda</div>
                     </td>
                   </tr>
@@ -201,6 +202,7 @@ export default function ListaParadas() {
                         />
                       </td>
                       <td className="cell-mono">{p.numeroParada?.trim()}</td>
+                      <td className="cell-mono">{p.numeroParte?.trim() || "-"}</td>
                       <td>{p.fechaParada ? new Date(p.fechaParada).toLocaleDateString() : "-"}</td>
                       <td className="cell-mono">
                         {volquetePorCodigo[p.codigoUnidad?.trim()] || "-"}

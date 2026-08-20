@@ -10,6 +10,7 @@ const detalleVacio = {
   horaInicial: "",
   horaFinal: "",
   codigoMotivo: "",
+  observacion: "",
 };
 
 const cabeceraVacia = {
@@ -19,15 +20,15 @@ const cabeceraVacia = {
   situacionParada: "",
   codigoUnidad: "",
   codigoAnalitico: "",
-  iHorometro: "",
-  iCombustible: "",
-  iRegimen: "",
-  iReserva: "",
-  fHorometro: "",
-  fCombustible: "",
-  fRegimen: "",
-  fReserva: "",
+  horoInicial: "",
+  horoFinal: "",
+  kmInicial: "",
+  kmFinal: "",
+  horaInicial: "",
+  horaFinal: "",
+  qcombustible: "",
   supervisadopor: "",
+  
 };
 
 export default function FormularioParada() {
@@ -111,14 +112,13 @@ export default function FormularioParada() {
           situacionParada: d.situacionParada?.trim() || "",
           codigoUnidad: d.codigoUnidad?.trim() || "",
           codigoAnalitico: d.codigoAnalitico?.trim() || "",
-          iHorometro: d.iHorometro ?? "",
-          iCombustible: d.iCombustible ?? "",
-          iRegimen: d.iRegimen ?? "",
-          iReserva: d.iReserva ?? "",
-          fHorometro: d.fHorometro ?? "",
-          fCombustible: d.fCombustible ?? "",
-          fRegimen: d.fRegimen ?? "",
-          fReserva: d.fReserva ?? "",
+          horoInicial: d.horoInicial ?? "",
+          horoFinal: d.horoFinal ?? "",
+          kmInicial: d.kmInicial ?? "",
+          kmFinal: d.kmFinal ?? "",
+          horaInicial: d.horaInicial ?? "",
+          horaFinal: d.horaFinal ?? "",
+          qcombustible: d.qcombustible ?? "",
           supervisadopor: d.supervisadopor?.trim() || "",
         });
         setDetalles(
@@ -127,6 +127,7 @@ export default function FormularioParada() {
                 horaInicial: det.horaInicial ?? "",
                 horaFinal: det.horaFinal ?? "",
                 codigoMotivo: det.codigoMotivo?.trim() || "",
+                observacion: det.observacion || "",
               }))
             : [{ ...detalleVacio }]
         );
@@ -171,6 +172,13 @@ export default function FormularioParada() {
         codigoAnalitico: d.codigoAnalitico?.trim() || prev.codigoAnalitico,
         supervisadopor: d.supervisadopor?.trim() || prev.supervisadopor,
         situacionParada: d.situacionParte?.trim() || prev.situacionParada,
+        horoInicial: d.horoInicial ?? prev.horoInicial,
+        horoFinal: d.horoFinal ?? prev.horoFinal,
+        kmInicial: d.kmInicial ?? prev.kmInicial,
+        kmFinal: d.kmFinal ?? prev.kmFinal,
+        horaInicial: d.horaInicial ?? prev.horaInicial,
+        horaFinal: d.horafinal ?? prev.horaFinal,
+        qcombustible: d.combustible ?? prev.qcombustible, 
       }));
       setAvisoParte(`Datos cargados del Parte de Trabajo N° ${numero}`);
     } catch (err) {
@@ -239,18 +247,18 @@ export default function FormularioParada() {
       ...cabecera,
       numeroParte: cabecera.numeroParte?.trim() || null,
       situacionParada: cabecera.situacionParada || null,
-      iHorometro: cabecera.iHorometro ? parseFloat(cabecera.iHorometro) : null,
-      iCombustible: cabecera.iCombustible ? parseFloat(cabecera.iCombustible) : null,
-      iRegimen: cabecera.iRegimen ? parseFloat(cabecera.iRegimen) : null,
-      iReserva: cabecera.iReserva ? parseInt(cabecera.iReserva) : null,
-      fHorometro: cabecera.fHorometro ? parseFloat(cabecera.fHorometro) : null,
-      fCombustible: cabecera.fCombustible ? parseFloat(cabecera.fCombustible) : null,
-      fRegimen: cabecera.fRegimen ? parseFloat(cabecera.fRegimen) : null,
-      fReserva: cabecera.fReserva ? parseInt(cabecera.fReserva) : null,
+      horoInicial: cabecera.horoInicial ? parseFloat(cabecera.horoInicial) : null,
+      horoFinal: cabecera.horoFinal ? parseFloat(cabecera.horoFinal) : null,
+      kmInicial: cabecera.kmInicial ? parseFloat(cabecera.kmInicial) : null,
+      kmFinal: cabecera.kmFinal ? parseFloat(cabecera.kmFinal) : null,
+      horaInicial: cabecera.horaInicial ? parseFloat(cabecera.horaInicial) : null,
+      horaFinal: cabecera.horaFinal ? parseFloat(cabecera.horaFinal) : null,
+      qcombustible: cabecera.qcombustible ? parseInt(cabecera.qcombustible) : null,
       detalles: detalles.map((d) => ({
         horaInicial: d.horaInicial ? parseFloat(d.horaInicial) : null,
         horaFinal: d.horaFinal ? parseFloat(d.horaFinal) : null,
         codigoMotivo: d.codigoMotivo || null,
+        observacion: d.observacion || null,
       })),
     };
 
@@ -472,7 +480,7 @@ export default function FormularioParada() {
             </div>
 
             <div className="form-section">
-              <div className="form-section-title">Lectura inicial</div>
+              <div className="form-section-title">Kilometraje y horómetro</div>
               <div className="grid-3">
                 <div className="field">
                   <label>Horómetro inicial</label>
@@ -480,98 +488,83 @@ export default function FormularioParada() {
                     className="input"
                     type="number"
                     step="0.01"
-                    name="iHorometro"
-                    value={cabecera.iHorometro}
+                    name="horoInicial"
+                    value={cabecera.horoInicial}
                     onChange={handleCabeceraChange}
                   />
                 </div>
-                <div className="field">
-                  <label>Combustible inicial</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="1"
-                    name="iCombustible"
-                    value={cabecera.iCombustible}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div className="field">
-                  <label>Régimen inicial</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.01"
-                    name="iRegimen"
-                    value={cabecera.iRegimen}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div className="field">
-                  <label>Reserva inicial</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="1"
-                    name="iReserva"
-                    value={cabecera.iReserva}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div></div>
-                <div></div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <div className="form-section-title">Lectura final</div>
-              <div className="grid-3">
                 <div className="field">
                   <label>Horómetro final</label>
                   <input
                     className="input"
                     type="number"
                     step="0.01"
-                    name="fHorometro"
-                    value={cabecera.fHorometro}
+                    name="horoFinal"
+                    value={cabecera.horoFinal}
                     onChange={handleCabeceraChange}
                   />
                 </div>
                 <div className="field">
-                  <label>Combustible final</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="1"
-                    name="fCombustible"
-                    value={cabecera.fCombustible}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-                <div className="field">
-                  <label>Régimen final</label>
+                  <label>Km inicial</label>
                   <input
                     className="input"
                     type="number"
                     step="0.01"
-                    name="fRegimen"
-                    value={cabecera.fRegimen}
+                    name="kmInicial"
+                    value={cabecera.kmInicial}
                     onChange={handleCabeceraChange}
                   />
                 </div>
                 <div className="field">
-                  <label>Reserva final</label>
+                  <label>Km final</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    name="kmFinal"
+                    value={cabecera.kmFinal}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
+                <div className="field">
+                  <label>Hora inicial</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    name="horaInicial"
+                    value={cabecera.horaInicial}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
+                <div className="field">
+                  <label>Hora final</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    name="horaFinal"
+                    value={cabecera.horaFinal}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <div className="form-section-title">Lectura de parada (Q)</div>
+              <div className="grid-3">
+                <div className="field">
+                  <label>Combustible</label>
                   <input
                     className="input"
                     type="number"
                     step="1"
-                    name="fReserva"
-                    value={cabecera.fReserva}
+                    name="qcombustible"
+                    value={cabecera.qcombustible}
                     onChange={handleCabeceraChange}
                   />
                 </div>
-                <div></div>
-                <div></div>
               </div>
             </div>
 
@@ -590,6 +583,7 @@ export default function FormularioParada() {
                       <th>HORA INICIAL</th>
                       <th>HORA FINAL</th>
                       <th>MOTIVO</th>
+                      <th>OBSERVACIÓN</th>
                       {!soloLectura && <th></th>}
                     </tr>
                   </thead>
@@ -628,6 +622,15 @@ export default function FormularioParada() {
                               </option>
                             ))}
                           </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            name="observacion"
+                            value={d.observacion}
+                            maxLength={250}
+                            onChange={(e) => handleDetalleChange(i, e)}
+                          />
                         </td>
                         {!soloLectura && (
                           <td>
