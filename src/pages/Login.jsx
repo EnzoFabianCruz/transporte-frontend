@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
+import "../styles/Login.css";
+import logo from "../img/logo.jpeg"
 
 export default function Login() {
   const [nombreUsuario, setNombreUsuario] = useState("");
@@ -39,34 +41,57 @@ export default function Login() {
   };
 
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", fontFamily: "sans-serif" }}>
-      <h2>Iniciar sesión</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Usuario</label>
-          <input
-            type="text"
-            value={nombreUsuario}
-            onChange={(e) => setNombreUsuario(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
+    <div className="login-screen">
+      <div className="form-card">
+        {/*
+          Coloca aquí tu imagen, por ejemplo:
+          import logo from "../assets/logo-luchito.png";
+          ...
+          <img src={logo} alt="Transportes Luchito" className="logo-slot" />
+        */}
+        <div className="logo-slot">
+          <img src={logo} alt="Logo" />
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Contraseña</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={cargando} style={{ width: "100%", padding: 10 }}>
-          {cargando ? "Ingresando..." : "Ingresar"}
-        </button>
-      </form>
+
+        <h2>Iniciar sesión</h2>
+        <p className="subtitle">Ingresa tus credenciales para continuar</p>
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="nombreUsuario">Usuario</label>
+            <input
+              id="nombreUsuario"
+              type="text"
+              value={nombreUsuario}
+              onChange={(e) => setNombreUsuario(e.target.value)}
+              required
+              autoComplete="username"
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </div>
+
+          {error && <div className="error-msg">{error}</div>}
+
+          <button type="submit" className="submit-btn" disabled={cargando}>
+            {cargando ? "Ingresando..." : "Ingresar"}
+          </button>
+        </form>
+
+        <p style={{ textAlign: "center", marginTop: 18, fontSize: 13.5 }}>
+          <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
-import SeccionNav from "../components/SeccionNav";
+import Layout from "../components/Layout";
 import { estadoLabel, estadoBadgeClass } from "../utils/estado";
 
 export default function ListaPartes() {
@@ -21,7 +21,7 @@ export default function ListaPartes() {
   const [unidades, setUnidades] = useState([]);
   const [operadores, setOperadores] = useState([]);
 
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
   const navigate = useNavigate();
   const esAdmin = usuario?.rol === "Admin";
 
@@ -94,24 +94,7 @@ export default function ListaPartes() {
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h2>Partes de Trabajo</h2>
-        <div className="user-chip">
-          <span>
-            <strong>{usuario?.nombre || usuario?.nombreUsuario}</strong>{" "}
-            <span className={`badge ${usuario?.rol === "Admin" ? "badge-role-admin" : "badge-role-usuario"}`}>
-              {usuario?.rol}
-            </span>
-          </span>
-          <button className="btn btn-ghost" onClick={logout}>
-            Cerrar sesión
-          </button>
-        </div>
-      </div>
-
-      <SeccionNav />
-
+    <Layout title="Partes de Trabajo">
       {/* Filtro de búsqueda en tiempo real */}
       <div className="searchbar">
         <input
@@ -251,6 +234,6 @@ export default function ListaPartes() {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 }

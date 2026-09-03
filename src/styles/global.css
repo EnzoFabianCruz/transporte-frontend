@@ -550,3 +550,61 @@ tbody tr.is-selected {
   color: var(--color-text-muted);
   font-size: 13px;
 }
+
+/* Agregar esto a tu hoja de estilos global, junto a las demás clases
+   (.page, .badge, .btn, .table-wrap, .seccion-nav, etc). Nada de esto
+   reemplaza lo que ya tienes, son clases nuevas que usa UsuariosAdmin. */
+
+.badge-active {
+  background: #E3F5EA;
+  color: #1F9254;
+}
+
+.badge-inactive {
+  background: #FCEAEA;
+  color: #D64545;
+}
+
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 380px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 28px;
+}
+
+.modal-card h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+.modal-card .field {
+  margin-bottom: 16px;
+}
+
+.modal-card label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+  margin-bottom: 6px;
+}
+
+.modal-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}

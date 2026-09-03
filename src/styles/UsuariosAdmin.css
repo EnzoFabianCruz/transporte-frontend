@@ -1,0 +1,222 @@
+.usuarios-admin {
+  font-family: 'Inter', sans-serif;
+  color: #1F2937;
+  background: #F7F8FA;
+  min-height: 100vh;
+  padding: 32px 40px;
+}
+
+.usuarios-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: #111827;
+}
+
+.usuarios-error {
+  background: #FCEAEA;
+  color: #D64545;
+  border: 1px solid #F1C6C4;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.usuarios-tabla-wrap {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.usuarios-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.usuarios-tabla thead th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #6B7280;
+  padding: 14px 16px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.usuarios-tabla tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #F1F2F4;
+}
+
+.usuarios-tabla tbody tr {
+  cursor: pointer;
+}
+
+.usuarios-tabla tbody tr:hover {
+  background: #FAFAFB;
+}
+
+.usuarios-tabla tbody tr.fila-seleccionada {
+  background: #FDF3E9;
+}
+
+.celda-fuerte {
+  font-weight: 600;
+  color: #111827;
+}
+
+.usuarios-vacio {
+  text-align: center;
+  color: #9CA3AF;
+  padding: 28px !important;
+  cursor: default;
+}
+
+.badge-rol,
+.badge-estado {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.badge-rol-admin {
+  background: #FDEEDD;
+  color: #C97A1A;
+}
+
+.badge-rol-usuario {
+  background: #EAF0FF;
+  color: #3B5BDB;
+}
+
+.badge-activo {
+  background: #E3F5EA;
+  color: #1F9254;
+}
+
+.badge-inactivo {
+  background: #FCEAEA;
+  color: #D64545;
+}
+
+.usuarios-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-primario {
+  background: #C97A1A;
+  color: #FFFFFF;
+}
+
+.btn-primario:hover:not(:disabled) {
+  background: #B06A14;
+}
+
+.btn-secundario {
+  background: #FFFFFF;
+  color: #374151;
+  border-color: #D1D5DB;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background: #F3F4F6;
+}
+
+.btn-peligro {
+  background: #FFFFFF;
+  color: #D64545;
+  border-color: #F1C6C4;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: #FCEAEA;
+}
+
+/* ---------- Modal ---------- */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 380px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 28px;
+}
+
+.modal-card h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 20px;
+  color: #111827;
+}
+
+.modal-card .field {
+  margin-bottom: 16px;
+}
+
+.modal-card label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+  margin-bottom: 6px;
+}
+
+.modal-card input,
+.modal-card select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid #D1D5DB;
+  border-radius: 6px;
+  background: #F9FAFB;
+}
+
+.modal-card input:focus,
+.modal-card select:focus {
+  outline: none;
+  border-color: #C97A1A;
+  background: #FFFFFF;
+}
+
+.modal-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
