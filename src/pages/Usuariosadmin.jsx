@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig";
 import Layout from "../components/Layout";
+import BuscadorPersonal from "../components/BuscadorPersonal"; 
 
 const ROL_VACIO = "Usuario";
 
@@ -10,6 +11,7 @@ const FORM_VACIO = {
   nombre: "",
   email: "",
   rol: ROL_VACIO,
+  codigoPersonal: "",
 };
 
 export default function UsuariosAdmin() {
@@ -63,6 +65,7 @@ export default function UsuariosAdmin() {
         nombre: form.nombre || null,
         email: form.email || null,
         rol: form.rol,
+        codigoPersonal: form.codigoPersonal || null, 
       });
       setMostrarModal(false);
       await cargarUsuarios();
@@ -120,6 +123,7 @@ export default function UsuariosAdmin() {
                   <th>Nombre</th>
                   <th>Email</th>
                   <th>Rol</th>
+                  <th>Código</th> 
                   <th>Estado</th>
                   <th>Creado</th>
                 </tr>
@@ -127,7 +131,7 @@ export default function UsuariosAdmin() {
               <tbody>
                 {usuarios.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="empty-state">No hay usuarios registrados</div>
                     </td>
                   </tr>
@@ -154,6 +158,7 @@ export default function UsuariosAdmin() {
                           {u.rol}
                         </span>
                       </td>
+                      <td className="cell-mono">{u.codigoPersonal?.trim() || "-"}</td>
                       <td>
                         <span className={`badge ${u.activo ? "badge-active" : "badge-inactive"}`}>
                           {u.activo ? "Activo" : "Inactivo"}
@@ -252,10 +257,20 @@ export default function UsuariosAdmin() {
                 <label htmlFor="rol">Rol</label>
                 <select className="input" id="rol" name="rol" value={form.rol} onChange={handleFormChange}>
                   <option value="Usuario">Usuario</option>
-                  <option value="Admin">Admin</option>
                   <option value="Supervisor">Supervisor</option>
+                  <option value="Admin">Admin</option>
                 </select>
               </div>
+
+              {form.rol === "Supervisor" && (
+                <div className="field">
+                  <label>Código de empleado</label>
+                  <BuscadorPersonal
+                    value={form.codigoPersonal}
+                    onChange={(codigo) => setForm((f) => ({ ...f, codigoPersonal: codigo }))}
+                  />
+                </div>
+              )}
 
               {errorForm && <div className="message message-error">{errorForm}</div>}
 

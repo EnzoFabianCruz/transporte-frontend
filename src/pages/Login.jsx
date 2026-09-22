@@ -25,8 +25,8 @@ export default function Login() {
         password,
       });
 
-      const { token, usuarioId, nombre, rol } = respuesta.data;
-      login({ usuarioId, nombreUsuario, nombre, rol }, token);
+      const { token, usuarioId, nombre, rol, codigoPersonal } = respuesta.data;
+      login({ usuarioId, nombreUsuario, nombre, rol, codigoPersonal }, token);
 
       navigate("/");
     } catch (err) {
