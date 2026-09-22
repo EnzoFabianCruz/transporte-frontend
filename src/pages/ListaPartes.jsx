@@ -4,7 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
-import { estadoLabel, estadoBadgeClass } from "../utils/estado";
+import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/Estado";
 
 export default function ListaPartes() {
   const [partes, setPartes] = useState([]);
@@ -24,6 +24,17 @@ export default function ListaPartes() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const esAdmin = usuario?.rol === "Admin";
+  const esSupervisor = usuario?.rol === "Supervisor";       
+  const puedeAprobar = esAdmin || esSupervisor;              
+
+  const handleAprobar = async (numeroParte) => {              
+    try {
+      await api.patch(`/Formulario/${numeroParte.trim()}/aprobar`);
+      cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
+    } catch (err) {
+      alert(err.response?.data?.mensaje || "Error al aprobar el parte");
+    }
+  };
 
   // Carga los catálogos una sola vez (igual que en FormularioParte)
   useEffect(() => {
@@ -200,6 +211,19 @@ export default function ListaPartes() {
                         <span className={estadoBadgeClass(p.situacionParte)}>
                           {estadoLabel(p.situacionParte)}
                         </span>
+                        {puedeAprobar && puedeAprobarse(p.situacionParte) && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ marginLeft: 8 }}
+                            onClick={(e) => {
+                              e.stopPropagation();       // evita que se seleccione la fila al hacer clic
+                              handleAprobar(p.numeroParte);
+                            }}
+                          >
+                            Aprobar
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

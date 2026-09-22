@@ -253,6 +253,7 @@ export default function UsuariosAdmin() {
                 <select className="input" id="rol" name="rol" value={form.rol} onChange={handleFormChange}>
                   <option value="Usuario">Usuario</option>
                   <option value="Admin">Admin</option>
+                  <option value="Supervisor">Supervisor</option>
                 </select>
               </div>
 

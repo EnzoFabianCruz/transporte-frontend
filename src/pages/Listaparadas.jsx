@@ -4,7 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
-import { estadoLabel, estadoBadgeClass } from "../utils/estado";
+import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/Estado";
 
 export default function ListaParadas() {
   const [paradas, setParadas] = useState([]);
@@ -24,6 +24,17 @@ export default function ListaParadas() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const esAdmin = usuario?.rol === "Admin";
+  const esSupervisor = usuario?.rol === "Supervisor";
+const puedeAprobar = esAdmin || esSupervisor;
+
+const handleAprobar = async (numeroParada) => {
+  try {
+    await api.patch(`/ParteParada/${numeroParada.trim()}/aprobar`);
+    cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
+  } catch (err) {
+    alert(err.response?.data?.mensaje || "Error al aprobar la parada");
+  }
+};
 
   // Carga los catálogos una sola vez (igual que en ListaPartes)
   useEffect(() => {
@@ -202,6 +213,19 @@ export default function ListaParadas() {
                         <span className={estadoBadgeClass(p.situacionParada)}>
                           {estadoLabel(p.situacionParada)}
                         </span>
+                        {puedeAprobar && puedeAprobarse(p.situacionParada) && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ marginLeft: 8 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAprobar(p.numeroParada);
+                            }}
+                          >
+                            Aprobar
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

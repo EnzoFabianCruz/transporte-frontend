@@ -608,3 +608,7 @@ tbody tr.is-selected {
   gap: 10px;
   margin-top: 22px;
 }
+.badge-aprobado {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
