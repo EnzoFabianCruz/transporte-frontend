@@ -1,4 +1,5 @@
 import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import SeccionNav from "./SeccionNav";
 
 // Envuelve el header (título + chip de usuario + cerrar sesión) y el nav de
@@ -18,6 +19,7 @@ export default function Layout({ title, children, mostrarNav = true }) {
               {usuario?.rol}
             </span>
           </span>
+            <Link to="/mi-perfil" className="btn btn-ghost">Mi perfil</Link> 
           <button className="btn btn-ghost" onClick={logout}>
             Cerrar sesión
           </button>

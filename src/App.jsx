@@ -2,13 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import ListaPartes from "./pages/ListaPartes";
-import ListaParadas from "./pages/ListaParadas";
+import ListaParadas from "./pages/Listaparadas";
 import FormularioParte from "./pages/FormularioParte";
 import FormularioParada from "./pages/FormularioParada";
-import UsuariosAdmin from "./pages/UsuariosAdmin";
+import UsuariosAdmin from "./pages/Usuariosadmin";
 import RecuperarPassword from "./pages/Recuperarpassword";
 import RestablecerPassword from "./pages/Restablecerpassword";
-
+import MiPerfil from "./pages/MiPerfil"; 
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" />;
@@ -35,6 +35,7 @@ function AppRoutes() {
       <Route path="/formulario-parada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/formulario-parada/:numeroParada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/usuarios" element={<RutaAdmin><UsuariosAdmin /></RutaAdmin>} />
+      <Route path="/mi-perfil" element={<RutaProtegida><MiPerfil /></RutaProtegida>} />  
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
