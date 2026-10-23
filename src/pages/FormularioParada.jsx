@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
-import { estadoLabel, estadoBadgeClass } from "../utils/Estado";
+import { estadoLabel, estadoBadgeClass } from "../utils/estado.js";
 import { rolEsAdmin, puedeModificarPorFecha, MENSAJE_SOLO_CONSULTA } from "../utils/permisos";
 import "../styles/FormularioParte.css";
 
