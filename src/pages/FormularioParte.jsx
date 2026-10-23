@@ -70,6 +70,8 @@ export default function FormularioParte() {
 
   const [cabecera, setCabecera] = useState(cabeceraVacia);
   const [detalles, setDetalles] = useState([{ ...detalleVacio }]);
+  const [selAbierto, setSelAbierto] = useState(null);
+  const [cicloAbierto, setCicloAbierto] = useState(null);
 
   // Fuera de plazo: un operador/supervisor no puede modificar partes de más de 1 día
   const bloqueadoPorFecha =
@@ -653,26 +655,34 @@ export default function FormularioParte() {
                           />
                         </td>
                         <td>
-                          <select
-                            value={mCodigo(materialDeDetalle(d)).trim()}
-                            onChange={(e) => handleMaterialChange(i, e.target.value)}
-                          >
-                            <option value="">-- Seleccione --</option>
-                            {materiales.map((m) => (
-                              <option key={mCodigo(m)} value={mCodigo(m).trim()}>
-                                {m.abreviatura}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={mNombre(materialDeDetalle(d))}
-                            readOnly
-                            tabIndex={-1}
-                          />
-                        </td>
+                        <select
+                          value={mCodigo(materialDeDetalle(d)).trim()}
+                          onMouseDown={() => setSelAbierto(i)}
+                          onFocus={() => setSelAbierto(i)}
+                          onBlur={() => setSelAbierto(null)}
+                          onChange={(e) => {
+                            handleMaterialChange(i, e.target.value);
+                            setSelAbierto(null);
+                          }}
+                        >
+                          <option value="">-- Seleccione --</option>
+                          {materiales.map((m) => (
+                            <option key={mCodigo(m)} value={mCodigo(m).trim()}>
+                              {selAbierto === i
+                                ? `${m.abreviatura} - ${mNombre(m)}`
+                                : m.abreviatura}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          value={mNombre(materialDeDetalle(d))}
+                          readOnly
+                          tabIndex={-1}
+                        />
+                      </td>
                         <td>
                           <input
                             type="text"
@@ -685,12 +695,20 @@ export default function FormularioParte() {
                         <td>
                           <select
                             value={cicloDeDetalle(d)?.codigoCiclo?.trim() ?? ""}
-                            onChange={(e) => handleCicloChange(i, e.target.value)}
+                            onMouseDown={() => setCicloAbierto(i)}
+                            onFocus={() => setCicloAbierto(i)}
+                            onBlur={() => setCicloAbierto(null)}
+                            onChange={(e) => {
+                              handleCicloChange(i, e.target.value);
+                              setCicloAbierto(null);
+                            }}
                           >
                             <option value="">-- Seleccione --</option>
                             {ciclos.map((c) => (
                               <option key={c.codigoCiclo} value={c.codigoCiclo?.trim()}>
-                                {c.valor}
+                                {cicloAbierto === i
+                                  ? `${c.valor} - ${c.nombreOrigen} - ${c.nombreDestino} - ${c.horas}`
+                                  : c.valor}
                               </option>
                             ))}
                           </select>

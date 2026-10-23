@@ -4,7 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
-import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/estado";
+import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/Estado";
 import {
   rolEsAdmin,
   rolEsSupervisor,
