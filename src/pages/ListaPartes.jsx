@@ -4,7 +4,13 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
-import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/Estado";
+import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/estado";
+import {
+  rolEsAdmin,
+  rolEsSupervisor,
+  puedeModificarPorFecha,
+  MENSAJE_SOLO_CONSULTA,
+} from "../utils/permisos";
 
 export default function ListaPartes() {
   const [partes, setPartes] = useState([]);
@@ -23,19 +29,27 @@ export default function ListaPartes() {
 
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const esAdmin = usuario?.rol === "Admin";
-  const esSupervisor = usuario?.rol === "Supervisor";       
-  const puedeAprobar = esAdmin || esSupervisor;              
+  const esAdmin = rolEsAdmin(usuario?.rol);
+  const esSupervisor = rolEsSupervisor(usuario?.rol);
+  const puedeAprobar = esAdmin || esSupervisor;
 
-  const handleAprobar = async (numeroParte) => {              
-    try {
-      await api.patch(`/Formulario/${numeroParte.trim()}/aprobar`);
-      cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
-    } catch (err) {
-      alert(err.response?.data?.mensaje || "Error al aprobar el parte");
-    }
-  };
+  // Parte seleccionado y si el usuario puede modificarlo (hoy/ayer para operador y supervisor; Admin siempre)
+  const parteSeleccionado = partes.find((p) => p.numeroParte === seleccionado) || null;
+  const puedeModificar =
+    !!parteSeleccionado && puedeModificarPorFecha(usuario?.rol, parteSeleccionado.fechaParte);
 
+const handleAprobar = async (parte) => {
+  if (!puedeModificarPorFecha(usuario?.rol, parte.fechaParte)) {
+    alert(MENSAJE_SOLO_CONSULTA);
+    return;
+  }
+  try {
+    await api.patch(`/Formulario/${parte.numeroParte.trim()}/aprobar`);
+    cargarPartes(busquedaDebounced, fechaDesde, fechaHasta);
+  } catch (err) {
+    alert(err.response?.data?.mensaje || "Error al aprobar el parte");
+  }
+};
   // Carga los catálogos una sola vez (igual que en FormularioParte)
   useEffect(() => {
     api
@@ -216,9 +230,15 @@ export default function ListaPartes() {
                             type="button"
                             className="btn btn-secondary btn-sm"
                             style={{ marginLeft: 8 }}
+                            disabled={!puedeModificarPorFecha(usuario?.rol, p.fechaParte)}
+                            title={
+                              puedeModificarPorFecha(usuario?.rol, p.fechaParte)
+                                ? "Aprobar parte"
+                                : "Solo se pueden aprobar registros de hoy o de ayer"
+                            }
                             onClick={(e) => {
-                              e.stopPropagation();       // evita que se seleccione la fila al hacer clic
-                              handleAprobar(p.numeroParte);
+                              e.stopPropagation(); // evita que se seleccione la fila al hacer clic
+                              handleAprobar(p);
                             }}
                           >
                             Aprobar
@@ -238,7 +258,8 @@ export default function ListaPartes() {
             </button>
             <button
               className="btn btn-secondary"
-              disabled={!seleccionado}
+              disabled={!puedeModificar}
+              title={seleccionado && !puedeModificar ? MENSAJE_SOLO_CONSULTA : ""}
               onClick={() => navigate(`/formulario/${seleccionado.trim()}?modo=editar`)}
             >
               Modificar
@@ -256,6 +277,12 @@ export default function ListaPartes() {
               </button>
             )}
           </div>
+
+          {seleccionado && !puedeModificar && (
+            <p className="cell-muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+              {MENSAJE_SOLO_CONSULTA}
+            </p>
+          )}
         </div>
       )}
     </Layout>

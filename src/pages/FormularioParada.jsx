@@ -4,6 +4,7 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { estadoLabel, estadoBadgeClass } from "../utils/estado";
+import { rolEsAdmin, puedeModificarPorFecha, MENSAJE_SOLO_CONSULTA } from "../utils/permisos";
 import "../styles/FormularioParte.css";
 
 const detalleVacio = {
@@ -28,7 +29,6 @@ const cabeceraVacia = {
   horaFinal: "",
   qcombustible: "",
   supervisadopor: "",
-  
 };
 
 export default function FormularioParada() {
@@ -38,7 +38,6 @@ export default function FormularioParada() {
   const navigate = useNavigate();
 
   const modo = numeroParada ? searchParams.get("modo") || "editar" : "crear"; // "crear" | "editar" | "ver"
-  const soloLectura = modo === "ver";
 
   const [operadores, setOperadores] = useState([]);
   const [supervisores, setSupervisores] = useState([]);
@@ -60,6 +59,16 @@ export default function FormularioParada() {
 
   const [cabecera, setCabecera] = useState(cabeceraVacia);
   const [detalles, setDetalles] = useState([{ ...detalleVacio }]);
+
+  // Fuera de plazo: un operador/supervisor no puede modificar paradas de más de 1 día
+  const bloqueadoPorFecha =
+    modo === "editar" &&
+    !!cabecera.fechaParada &&
+    !puedeModificarPorFecha(usuario?.rol, cabecera.fechaParada);
+  const soloLectura = modo === "ver" || bloqueadoPorFecha;
+
+  // Al editar, solo el Admin puede cambiar la fecha
+  const bloqueaFecha = modo === "editar" && !rolEsAdmin(usuario?.rol);
 
   // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Motivo)
   useEffect(() => {
@@ -178,7 +187,7 @@ export default function FormularioParada() {
         kmFinal: d.kmFinal ?? prev.kmFinal,
         horaInicial: d.horaInicial ?? prev.horaInicial,
         horaFinal: d.horafinal ?? prev.horaFinal,
-        qcombustible: d.combustible ?? prev.qcombustible, 
+        qcombustible: d.combustible ?? prev.qcombustible,
       }));
       setAvisoParte(`Datos cargados del Parte de Trabajo N° ${numero}`);
     } catch (err) {
@@ -239,6 +248,8 @@ export default function FormularioParada() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (soloLectura) return;
+
     setError("");
     setMensaje("");
     setEnviando(true);
@@ -285,7 +296,7 @@ export default function FormularioParada() {
   const titulo =
     modo === "crear"
       ? "Nuevo Parte de Parada"
-      : modo === "editar"
+      : modo === "editar" && !soloLectura
       ? "Modificar Parte de Parada"
       : "Consultar Parte de Parada";
 
@@ -316,6 +327,8 @@ export default function FormularioParada() {
       >
         ← Volver a la lista
       </button>
+
+      {bloqueadoPorFecha && <div className="message message-error">{MENSAJE_SOLO_CONSULTA}</div>}
 
       <div className="card">
         <fieldset
@@ -384,11 +397,14 @@ export default function FormularioParada() {
                     name="fechaParada"
                     value={cabecera.fechaParada}
                     onChange={handleCabeceraChange}
+                    readOnly={bloqueaFecha}
+                    tabIndex={bloqueaFecha ? -1 : undefined}
+                    style={bloqueaFecha ? { pointerEvents: "none" } : undefined}
                   />
                 </div>
                 <div className="field">
                   <label>Turno</label>
-                  <div>
+                  <div className="turno-group">
                     <label style={{ marginRight: 12 }}>
                       <input
                         type="radio"
@@ -462,7 +478,7 @@ export default function FormularioParada() {
                   </select>
                 </div>
 
-                {/* Fila 3: Situación */}
+                {/* Fila 3: Situación y combustible */}
                 <div className="field">
                   <label>Situación</label>
                   <input
@@ -474,8 +490,17 @@ export default function FormularioParada() {
                     maxLength={2}
                   />
                 </div>
-                <div></div>
-                <div></div>
+                <div className="field">
+                  <label>Combustible (Q)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    step="1"
+                    name="qcombustible"
+                    value={cabecera.qcombustible}
+                    onChange={handleCabeceraChange}
+                  />
+                </div>
               </div>
             </div>
 
@@ -551,24 +576,7 @@ export default function FormularioParada() {
               </div>
             </div>
 
-            <div className="form-section">
-              <div className="form-section-title">Lectura de parada (Q)</div>
-              <div className="grid-3">
-                <div className="field">
-                  <label>Combustible</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="1"
-                    name="qcombustible"
-                    value={cabecera.qcombustible}
-                    onChange={handleCabeceraChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
+            <div className="form-section form-section--detalle">
               <div className="form-section-title">Detalle de paradas</div>
 
               <p className="cell-muted" style={{ fontSize: 12, margin: "4px 0 8px" }}>
@@ -576,7 +584,7 @@ export default function FormularioParada() {
               </p>
 
               <div className="table-wrap parte-grid">
-                <table className="detail-table">
+                <table className="detail-table detail-table--parada">
                   <thead>
                     <tr>
                       <th>#</th>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig";
 import Layout from "../components/Layout";
-import BuscadorPersonal from "../components/BuscadorPersonal"; 
+import BuscadorPersonal from "../components/BuscadorPersonal";
 
 const ROL_VACIO = "Usuario";
 
@@ -21,6 +21,7 @@ export default function UsuariosAdmin() {
   const [cargandoInicial, setCargandoInicial] = useState(true);
 
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [editandoId, setEditandoId] = useState(null); // null = creando, número = editando
   const [form, setForm] = useState(FORM_VACIO);
   const [errorForm, setErrorForm] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -43,8 +44,29 @@ export default function UsuariosAdmin() {
 
   const usuarioSeleccionado = usuarios.find((u) => u.id === seleccionado) || null;
 
+  const cerrarModal = () => {
+    setMostrarModal(false);
+    setEditandoId(null);
+  };
+
   const abrirModalNuevo = () => {
     setForm(FORM_VACIO);
+    setEditandoId(null);
+    setErrorForm("");
+    setMostrarModal(true);
+  };
+
+  const abrirModalEditar = () => {
+    if (!usuarioSeleccionado) return;
+    setForm({
+      nombreUsuario: usuarioSeleccionado.nombreUsuario,
+      password: "", // vacío = no cambiar la clave
+      nombre: usuarioSeleccionado.nombre || "",
+      email: usuarioSeleccionado.email || "",
+      rol: usuarioSeleccionado.rol,
+      codigoPersonal: usuarioSeleccionado.codigoPersonal?.trim() || "",
+    });
+    setEditandoId(usuarioSeleccionado.id);
     setErrorForm("");
     setMostrarModal(true);
   };
@@ -54,23 +76,44 @@ export default function UsuariosAdmin() {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const handleCrearUsuario = async (e) => {
+  const handleGuardar = async (e) => {
     e.preventDefault();
     setErrorForm("");
     setGuardando(true);
     try {
-      await api.post("/Auth/registrar-usuario", {
-        nombreUsuario: form.nombreUsuario,
-        password: form.password,
-        nombre: form.nombre || null,
-        email: form.email || null,
-        rol: form.rol,
-        codigoPersonal: form.codigoPersonal || null, 
-      });
-      setMostrarModal(false);
+      // Si el rol no es Supervisor, no se envía código de personal
+      const codigo = form.rol === "Supervisor" ? form.codigoPersonal || null : null;
+
+      if (editandoId === null) {
+        await api.post("/Auth/registrar-usuario", {
+          nombreUsuario: form.nombreUsuario,
+          password: form.password,
+          nombre: form.nombre || null,
+          email: form.email || null,
+          rol: form.rol,
+          codigoPersonal: codigo,
+        });
+      } else {
+        const actual = usuarios.find((u) => u.id === editandoId);
+        await api.put(`/Usuarios/${editandoId}`, {
+          nombreUsuario: form.nombreUsuario,
+          nombre: form.nombre || null,
+          email: form.email || null,
+          rol: form.rol,
+          codigoPersonal: codigo,
+          activo: actual ? actual.activo : true,
+          nuevaPassword: form.password || null,
+        });
+      }
+
+      cerrarModal();
       await cargarUsuarios();
     } catch (err) {
-      setErrorForm(err.response?.data?.mensaje || "Error al crear el usuario");
+      setErrorForm(
+        err.response?.data?.mensaje ||
+          err.response?.data?.title ||
+          "Error al guardar el usuario"
+      );
     } finally {
       setGuardando(false);
     }
@@ -123,7 +166,7 @@ export default function UsuariosAdmin() {
                   <th>Nombre</th>
                   <th>Email</th>
                   <th>Rol</th>
-                  <th>Código</th> 
+                  <th>Código</th>
                   <th>Estado</th>
                   <th>Creado</th>
                 </tr>
@@ -176,6 +219,9 @@ export default function UsuariosAdmin() {
             <button className="btn btn-primary" onClick={abrirModalNuevo}>
               + Nuevo usuario
             </button>
+            <button className="btn btn-secondary" disabled={!usuarioSeleccionado} onClick={abrirModalEditar}>
+              Editar
+            </button>
             <button
               className="btn btn-secondary"
               disabled={!usuarioSeleccionado || usuarioSeleccionado.activo}
@@ -198,11 +244,11 @@ export default function UsuariosAdmin() {
       )}
 
       {mostrarModal && (
-        <div className="modal-fondo" onClick={() => setMostrarModal(false)}>
+        <div className="modal-fondo" onClick={cerrarModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2>Nuevo usuario</h2>
+            <h2>{editandoId === null ? "Nuevo usuario" : "Editar usuario"}</h2>
 
-            <form onSubmit={handleCrearUsuario}>
+            <form onSubmit={handleGuardar}>
               <div className="field">
                 <label htmlFor="nombreUsuario">Usuario</label>
                 <input
@@ -217,7 +263,9 @@ export default function UsuariosAdmin() {
               </div>
 
               <div className="field">
-                <label htmlFor="password">Contraseña</label>
+                <label htmlFor="password">
+                  {editandoId === null ? "Contraseña" : "Nueva contraseña (opcional)"}
+                </label>
                 <input
                   className="input"
                   id="password"
@@ -225,7 +273,10 @@ export default function UsuariosAdmin() {
                   type="password"
                   value={form.password}
                   onChange={handleFormChange}
-                  required
+                  required={editandoId === null}
+                  minLength={6}
+                  placeholder={editandoId === null ? "" : "Dejar vacío para no cambiarla"}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -275,11 +326,15 @@ export default function UsuariosAdmin() {
               {errorForm && <div className="message message-error">{errorForm}</div>}
 
               <div className="modal-botones">
-                <button type="button" className="btn btn-secondary" onClick={() => setMostrarModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={cerrarModal}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={guardando}>
-                  {guardando ? "Guardando..." : "Crear usuario"}
+                  {guardando
+                    ? "Guardando..."
+                    : editandoId === null
+                    ? "Crear usuario"
+                    : "Guardar cambios"}
                 </button>
               </div>
             </form>

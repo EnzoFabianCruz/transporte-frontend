@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
+import {
+  hoyLocal,
+  rolEsAdmin,
+  rolEsSupervisor,
+  puedeModificarPorFecha,
+  MENSAJE_SOLO_CONSULTA,
+} from "../utils/permisos";
 import "../styles/FormularioParte.css";
 
 const detalleVacio = {
@@ -35,6 +42,13 @@ const cabeceraVacia = {
   supervisadopor: "",
 };
 
+// Normaliza para comparar códigos/textos (sin espacios, sin importar mayúsculas)
+const norm = (v) => String(v ?? "").trim().toUpperCase();
+
+// El catálogo de materiales puede llegar como codigoM/nombreM o codigom/nombrem
+const mCodigo = (m) => m?.codigoM ?? m?.codigom ?? "";
+const mNombre = (m) => m?.nombreM ?? m?.nombrem ?? "";
+
 export default function FormularioParte() {
   const { usuario, logout } = useAuth();
   const { numeroParte } = useParams();
@@ -42,7 +56,6 @@ export default function FormularioParte() {
   const navigate = useNavigate();
 
   const modo = numeroParte ? searchParams.get("modo") || "editar" : "crear"; // "crear" | "editar" | "ver"
-  const soloLectura = modo === "ver";
 
   const [operadores, setOperadores] = useState([]);
   const [supervisores, setSupervisores] = useState([]);
@@ -53,11 +66,42 @@ export default function FormularioParte() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [cargandoDatos, setCargandoDatos] = useState(!!numeroParte);
+  const [perfil, setPerfil] = useState(null);
 
   const [cabecera, setCabecera] = useState(cabeceraVacia);
   const [detalles, setDetalles] = useState([{ ...detalleVacio }]);
 
-  // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Ciclo)
+  // Fuera de plazo: un operador/supervisor no puede modificar partes de más de 1 día
+  const bloqueadoPorFecha =
+    modo === "editar" &&
+    !!cabecera.fechaParte &&
+    !puedeModificarPorFecha(usuario?.rol, cabecera.fechaParte);
+  const soloLectura = modo === "ver" || bloqueadoPorFecha;
+
+  const esAdminSesion = rolEsAdmin(usuario?.rol);
+
+  // Rol: el de mi-perfil o, si no, el de la sesión
+  const rolActual = perfil?.rol || usuario?.rol;
+  const esAdmin = rolEsAdmin(rolActual);
+  const esSupervisor = rolEsSupervisor(rolActual);
+
+  // Quién completa y bloquea qué
+  const bloqueaOperador = modo === "crear" && !!perfil && !esSupervisor && !esAdmin;
+  const bloqueaSupervisado = modo === "crear" && !!perfil && esSupervisor;
+  const bloqueaFecha = !esAdminSesion; // Admin: editable; resto: bloqueada al crear y al editar
+  const faltaCodigo =
+    modo === "crear" &&
+    !!perfil &&
+    !esAdmin &&
+    !(esSupervisor ? cabecera.supervisadopor : cabecera.codigoAnalitico);
+
+  // El horómetro final siempre debe ser mayor que el inicial
+  const horoInvalido =
+    cabecera.horoInicial !== "" &&
+    cabecera.horoFinal !== "" &&
+    parseFloat(cabecera.horoFinal) <= parseFloat(cabecera.horoInicial);
+
+  // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Ciclo, Material)
   useEffect(() => {
     api
       .get("/Personal/operadores")
@@ -145,6 +189,39 @@ export default function FormularioParte() {
     }
   }, [modo]);
 
+  // En modo crear: según el rol, completa Operador o Supervisado con el código del usuario, y la fecha = hoy
+  useEffect(() => {
+    if (modo !== "crear") return;
+
+    api
+      .get("/Usuarios/mi-perfil")
+      .then((res) => {
+        const p = res.data;
+        const rol = p.rol || usuario?.rol;
+        const codigo = p.codigoPersonal?.trim() || "";
+        const admin = rolEsAdmin(rol);
+        const supervisor = rolEsSupervisor(rol);
+        setPerfil(p);
+
+        setCabecera((prev) => ({
+          ...prev,
+          fechaParte: hoyLocal(),
+          ...(supervisor
+            ? { supervisadopor: codigo }
+            : !admin
+            ? { codigoAnalitico: codigo }
+            : {}),
+        }));
+
+        if (!codigo && !admin) {
+          setError(
+            "Tu usuario no tiene un código de personal asignado. Pide al administrador que lo configure."
+          );
+        }
+      })
+      .catch(() => setError("No se pudo obtener los datos del usuario"));
+  }, [modo]);
+
   const handleCabeceraChange = (e) => {
     setCabecera({ ...cabecera, [e.target.name]: e.target.value });
   };
@@ -155,9 +232,26 @@ export default function FormularioParte() {
     setDetalles(nuevos);
   };
 
+  // ---------- Ciclo ----------
+  // Busca el ciclo por código; si no, por el texto del ciclo (registros viejos)
+  const buscarCiclo = (codigo, valorGuardado) =>
+    ciclos.find((c) => norm(c.codigoCiclo) === norm(codigo)) ||
+    ciclos.find((c) => norm(c.valor) === norm(codigo)) ||
+    ciclos.find((c) => norm(c.valor) === norm(valorGuardado));
+
+  const cicloDeDetalle = (d) => buscarCiclo(d.codigoCiclo, d.valorCiclo);
+
+  // Total horas = horas del ciclo x número de viajes
+  const calcularTotalHoras = (d) => {
+    const horas = parseFloat(String(cicloDeDetalle(d)?.horas ?? "").replace(",", "."));
+    const viajes = parseFloat(d.numViajes);
+    if (isNaN(horas) || isNaN(viajes)) return "";
+    return Math.round(horas * viajes * 100) / 100;
+  };
+
   // Al elegir un Ciclo, autocompleta CodigoOrigen, CodigoDestino y ValorCiclo
   const handleCicloChange = (index, codigoCiclo) => {
-    const ciclo = ciclos.find((c) => c.codigoCiclo === codigoCiclo);
+    const ciclo = ciclos.find((c) => norm(c.codigoCiclo) === norm(codigoCiclo));
     const nuevos = [...detalles];
     nuevos[index] = {
       ...nuevos[index],
@@ -169,17 +263,23 @@ export default function FormularioParte() {
     setDetalles(nuevos);
   };
 
-  // Resuelve el nombre de origen/destino de una línea a partir del ciclo seleccionado
-  const cicloDeDetalle = (d) => ciclos.find((c) => c.codigoCiclo === d.codigoCiclo);
+  // ---------- Material ----------
+  // Busca el material por código; si no, por abreviatura (registros viejos)
+  const buscarMaterial = (codigo, valorGuardado) =>
+    materiales.find((m) => norm(mCodigo(m)) === norm(codigo)) ||
+    materiales.find((m) => norm(m.abreviatura) === norm(codigo)) ||
+    materiales.find((m) => norm(m.abreviatura) === norm(valorGuardado));
 
-  // Al elegir un Material, autocompleta el campo "material" (nombreM) con el nombre completo
-  const handleMaterialChange = (index, codigoM) => {
-    const mat = materiales.find((m) => m.codigoM === codigoM);
+  const materialDeDetalle = (d) => buscarMaterial(d.codigoMaterial, d.material);
+
+  // Al elegir un Material, autocompleta el campo "material" con el nombre completo
+  const handleMaterialChange = (index, codigo) => {
+    const mat = materiales.find((m) => norm(mCodigo(m)) === norm(codigo));
     const nuevos = [...detalles];
     nuevos[index] = {
       ...nuevos[index],
-      codigoMaterial: codigoM,
-      material: mat?.nombreM || "",
+      codigoMaterial: codigo,
+      material: mNombre(mat),
     };
     setDetalles(nuevos);
   };
@@ -193,6 +293,14 @@ export default function FormularioParte() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (soloLectura) return;
+
+    if (horoInvalido) {
+      setMensaje("");
+      setError("El horómetro final debe ser mayor que el horómetro inicial");
+      return;
+    }
+
     setError("");
     setMensaje("");
     setEnviando(true);
@@ -207,20 +315,26 @@ export default function FormularioParte() {
       horaInicial: cabecera.horaInicial ? parseFloat(cabecera.horaInicial) : null,
       horafinal: cabecera.horafinal ? parseFloat(cabecera.horafinal) : null,
       combustible: cabecera.combustible ? parseFloat(cabecera.combustible) : null,
-      detalles: detalles.map((d) => ({
-        dHoroFinal: d.dHoroFinal ? parseFloat(d.dHoroFinal) : null,
-        dKmFinal: d.dKmFinal ? parseFloat(d.dKmFinal) : null,
-        codigoMaterial: d.codigoMaterial || null,
-        codigoMineral: d.codigoMineral || null,
-        codigoOrigen: d.codigoOrigen || null,
-        codigoDestino: d.codigoDestino || null,
-        numViajes: d.numViajes ? parseInt(d.numViajes) : null,
-        peso: d.peso ? parseFloat(d.peso) : null,
-        codigoCiclo: d.codigoCiclo || null,
-        valorCiclo: d.valorCiclo || null,
-        material: d.material || null,
-        phoras: d.phoras ? parseFloat(d.phoras) : null,
-      })),
+      detalles: detalles.map((d) => {
+        const ciclo = buscarCiclo(d.codigoCiclo, d.valorCiclo);
+        const mat = buscarMaterial(d.codigoMaterial, d.material);
+        const totalHoras = calcularTotalHoras(d);
+
+        return {
+          dHoroFinal: d.dHoroFinal ? parseFloat(d.dHoroFinal) : null,
+          dKmFinal: d.dKmFinal ? parseFloat(d.dKmFinal) : null,
+          codigoMaterial: mCodigo(mat).trim() || d.codigoMaterial || null,
+          codigoMineral: d.codigoMineral || null,
+          codigoOrigen: ciclo?.codigoOrigen || d.codigoOrigen || null,
+          codigoDestino: ciclo?.codigoDestino || d.codigoDestino || null,
+          numViajes: d.numViajes ? parseInt(d.numViajes) : null,
+          peso: d.peso ? parseFloat(d.peso) : null,
+          codigoCiclo: ciclo?.codigoCiclo?.trim() || d.codigoCiclo || null,
+          valorCiclo: ciclo?.horas != null ? String(ciclo.horas) : d.valorCiclo || null,
+          material: mNombre(mat) || d.material || null,
+          phoras: totalHoras !== "" ? totalHoras : null,
+        };
+      }),
     };
 
     try {
@@ -246,7 +360,7 @@ export default function FormularioParte() {
   const titulo =
     modo === "crear"
       ? "Nuevo Parte de Trabajo"
-      : modo === "editar"
+      : modo === "editar" && !soloLectura
       ? "Modificar Parte de Trabajo"
       : "Consultar Parte de Trabajo";
 
@@ -278,6 +392,8 @@ export default function FormularioParte() {
         ← Volver a la lista
       </button>
 
+      {bloqueadoPorFecha && <div className="message message-error">{MENSAJE_SOLO_CONSULTA}</div>}
+
       <div className="card">
         <fieldset
           disabled={soloLectura}
@@ -306,11 +422,14 @@ export default function FormularioParte() {
                     name="fechaParte"
                     value={cabecera.fechaParte}
                     onChange={handleCabeceraChange}
+                    readOnly={bloqueaFecha}
+                    tabIndex={bloqueaFecha ? -1 : undefined}
+                    style={bloqueaFecha ? { pointerEvents: "none" } : undefined}
                   />
                 </div>
                 <div className="field">
                   <label>Turno</label>
-                  <div>
+                  <div className="turno-group">
                     <label style={{ marginRight: 12 }}>
                       <input
                         type="radio"
@@ -337,35 +456,67 @@ export default function FormularioParte() {
                 {/* Fila 2: Personal y unidad */}
                 <div className="field">
                   <label>Operador</label>
-                  <select
-                    className="select"
-                    name="codigoAnalitico"
-                    value={cabecera.codigoAnalitico}
-                    onChange={handleCabeceraChange}
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {operadores.map((o) => (
-                      <option key={o.codigoPersonal} value={o.codigoPersonal}>
-                        {o.nombreCompleto}
-                      </option>
-                    ))}
-                  </select>
+                  {bloqueaOperador ? (
+                    <input
+                      className="input"
+                      type="text"
+                      value={
+                        operadores.find((o) => o.codigoPersonal?.trim() === cabecera.codigoAnalitico)
+                          ?.nombreCompleto ||
+                        perfil?.nombre ||
+                        perfil?.nombreUsuario ||
+                        ""
+                      }
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  ) : (
+                    <select
+                      className="select"
+                      name="codigoAnalitico"
+                      value={cabecera.codigoAnalitico}
+                      onChange={handleCabeceraChange}
+                    >
+                      <option value="">-- Seleccione --</option>
+                      {operadores.map((o) => (
+                        <option key={o.codigoPersonal} value={o.codigoPersonal}>
+                          {o.nombreCompleto}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="field">
                   <label>Supervisado</label>
-                  <select
-                    className="select"
-                    name="supervisadopor"
-                    value={cabecera.supervisadopor}
-                    onChange={handleCabeceraChange}
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {supervisores.map((s) => (
-                      <option key={s.codigoPersonal} value={s.codigoPersonal}>
-                        {s.nombreCompleto}
-                      </option>
-                    ))}
-                  </select>
+                  {bloqueaSupervisado ? (
+                    <input
+                      className="input"
+                      type="text"
+                      value={
+                        supervisores.find((s) => s.codigoPersonal?.trim() === cabecera.supervisadopor)
+                          ?.nombreCompleto ||
+                        perfil?.nombre ||
+                        perfil?.nombreUsuario ||
+                        ""
+                      }
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  ) : (
+                    <select
+                      className="select"
+                      name="supervisadopor"
+                      value={cabecera.supervisadopor}
+                      onChange={handleCabeceraChange}
+                    >
+                      <option value="">-- Seleccione --</option>
+                      {supervisores.map((s) => (
+                        <option key={s.codigoPersonal} value={s.codigoPersonal}>
+                          {s.nombreCompleto}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="field">
                   <label>Unidad</label>
@@ -405,7 +556,13 @@ export default function FormularioParte() {
                     name="horoFinal"
                     value={cabecera.horoFinal}
                     onChange={handleCabeceraChange}
+                    style={horoInvalido ? { borderColor: "#c0392b" } : undefined}
                   />
+                  {horoInvalido && (
+                    <span style={{ fontSize: 12, color: "#c0392b" }}>
+                      Debe ser mayor que el horómetro inicial
+                    </span>
+                  )}
                 </div>
                 <div className="field">
                   <label>Combustible</label>
@@ -446,7 +603,7 @@ export default function FormularioParte() {
               </div>
             </div>
 
-            <div className="form-section">
+            <div className="form-section form-section--detalle">
               <div className="form-section-title">Detalle de viajes</div>
 
               <p className="cell-muted" style={{ fontSize: 12, margin: "4px 0 8px" }}>
@@ -454,7 +611,7 @@ export default function FormularioParte() {
               </p>
 
               <div className="table-wrap parte-grid">
-                <table className="detail-table">
+                <table className="detail-table detail-table--parte">
                   <thead>
                     <tr>
                       <th>#</th>
@@ -497,19 +654,24 @@ export default function FormularioParte() {
                         </td>
                         <td>
                           <select
-                            value={d.codigoMaterial}
+                            value={mCodigo(materialDeDetalle(d)).trim()}
                             onChange={(e) => handleMaterialChange(i, e.target.value)}
                           >
                             <option value="">-- Seleccione --</option>
                             {materiales.map((m) => (
-                              <option key={m.codigoM} value={m.codigoM}>
+                              <option key={mCodigo(m)} value={mCodigo(m).trim()}>
                                 {m.abreviatura}
                               </option>
                             ))}
                           </select>
                         </td>
                         <td>
-                          <input type="text" value={d.material} readOnly tabIndex={-1} />
+                          <input
+                            type="text"
+                            value={mNombre(materialDeDetalle(d))}
+                            readOnly
+                            tabIndex={-1}
+                          />
                         </td>
                         <td>
                           <input
@@ -522,35 +684,25 @@ export default function FormularioParte() {
                         </td>
                         <td>
                           <select
-                            value={d.codigoCiclo}
+                            value={cicloDeDetalle(d)?.codigoCiclo?.trim() ?? ""}
                             onChange={(e) => handleCicloChange(i, e.target.value)}
                           >
                             <option value="">-- Seleccione --</option>
                             {ciclos.map((c) => (
-                              <option key={c.codigoCiclo} value={c.codigoCiclo}>
+                              <option key={c.codigoCiclo} value={c.codigoCiclo?.trim()}>
                                 {c.valor}
                               </option>
                             ))}
                           </select>
                         </td>
                         <td>
-                          <input type="text" value={d.valorCiclo} readOnly tabIndex={-1} />
+                          <input type="text" value={cicloDeDetalle(d)?.horas ?? ""} readOnly tabIndex={-1} />
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            value={d.codigoOrigen ? cicloDeDetalle(d)?.nombreOrigen || "" : ""}
-                            readOnly
-                            tabIndex={-1}
-                          />
+                          <input type="text" value={cicloDeDetalle(d)?.nombreOrigen || ""} readOnly tabIndex={-1} />
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            value={d.codigoDestino ? cicloDeDetalle(d)?.nombreDestino || "" : ""}
-                            readOnly
-                            tabIndex={-1}
-                          />
+                          <input type="text" value={cicloDeDetalle(d)?.nombreDestino || ""} readOnly tabIndex={-1} />
                         </td>
                         <td>
                           <input
@@ -562,11 +714,10 @@ export default function FormularioParte() {
                         </td>
                         <td>
                           <input
-                            type="number"
-                            step="0.01"
-                            name="phoras"
-                            value={d.phoras}
-                            onChange={(e) => handleDetalleChange(i, e)}
+                            type="text"
+                            value={calcularTotalHoras(d)}
+                            readOnly
+                            tabIndex={-1}
                           />
                         </td>
                         <td>
@@ -601,7 +752,11 @@ export default function FormularioParte() {
             {mensaje && <div className="message message-success">{mensaje}</div>}
 
             {!soloLectura && (
-              <button type="submit" className="btn btn-primary" disabled={enviando}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={enviando || faltaCodigo || horoInvalido}
+              >
                 {enviando ? "Guardando..." : modo === "editar" ? "Guardar cambios" : "Registrar Parte"}
               </button>
             )}

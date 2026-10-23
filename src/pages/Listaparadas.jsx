@@ -4,7 +4,13 @@ import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
-import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/Estado";
+import { estadoLabel, estadoBadgeClass, puedeAprobarse } from "../utils/estado";
+import {
+  rolEsAdmin,
+  rolEsSupervisor,
+  puedeModificarPorFecha,
+  MENSAJE_SOLO_CONSULTA,
+} from "../utils/permisos";
 
 export default function ListaParadas() {
   const [paradas, setParadas] = useState([]);
@@ -23,13 +29,22 @@ export default function ListaParadas() {
 
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const esAdmin = usuario?.rol === "Admin";
-  const esSupervisor = usuario?.rol === "Supervisor";
-const puedeAprobar = esAdmin || esSupervisor;
+  const esAdmin = rolEsAdmin(usuario?.rol);
+  const esSupervisor = rolEsSupervisor(usuario?.rol);
+  const puedeAprobar = esAdmin || esSupervisor;
 
-const handleAprobar = async (numeroParada) => {
+  // Parada seleccionada y si el usuario puede modificarla (hoy/ayer para operador y supervisor; Admin siempre)
+  const paradaSeleccionada = paradas.find((p) => p.numeroParada === seleccionado) || null;
+  const puedeModificar =
+    !!paradaSeleccionada && puedeModificarPorFecha(usuario?.rol, paradaSeleccionada.fechaParada);
+
+const handleAprobar = async (parada) => {
+  if (!puedeModificarPorFecha(usuario?.rol, parada.fechaParada)) {
+    alert(MENSAJE_SOLO_CONSULTA);
+    return;
+  }
   try {
-    await api.patch(`/ParteParada/${numeroParada.trim()}/aprobar`);
+    await api.patch(`/ParteParada/${parada.numeroParada.trim()}/aprobar`);
     cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
   } catch (err) {
     alert(err.response?.data?.mensaje || "Error al aprobar la parada");
@@ -218,9 +233,15 @@ const handleAprobar = async (numeroParada) => {
                             type="button"
                             className="btn btn-secondary btn-sm"
                             style={{ marginLeft: 8 }}
+                            disabled={!puedeModificarPorFecha(usuario?.rol, p.fechaParada)}
+                            title={
+                              puedeModificarPorFecha(usuario?.rol, p.fechaParada)
+                                ? "Aprobar parada"
+                                : "Solo se pueden aprobar registros de hoy o de ayer"
+                            }
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleAprobar(p.numeroParada);
+                              handleAprobar(p);
                             }}
                           >
                             Aprobar
@@ -240,7 +261,8 @@ const handleAprobar = async (numeroParada) => {
             </button>
             <button
               className="btn btn-secondary"
-              disabled={!seleccionado}
+              disabled={!puedeModificar}
+              title={seleccionado && !puedeModificar ? MENSAJE_SOLO_CONSULTA : ""}
               onClick={() => navigate(`/formulario-parada/${seleccionado.trim()}?modo=editar`)}
             >
               Modificar
@@ -258,6 +280,12 @@ const handleAprobar = async (numeroParada) => {
               </button>
             )}
           </div>
+
+          {seleccionado && !puedeModificar && (
+            <p className="cell-muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+              {MENSAJE_SOLO_CONSULTA}
+            </p>
+          )}
         </div>
       )}
     </Layout>

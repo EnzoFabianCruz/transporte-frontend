@@ -1,33 +1,33 @@
 /* ===== TOKENS ===== */
 :root {
-  --color-bg: #f5f6f8;
+  --color-bg: #eef3fb;
   --color-surface: #ffffff;
-  --color-border: #e1e4ea;
-  --color-border-strong: #c8cdd6;
-  --color-text: #1a2233;
-  --color-text-muted: #66707f;
+  --color-border: #cbd5e1;
+  --color-border-strong: #94a3b8;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
 
-  --color-primary: #1f3a5f;
-  --color-primary-hover: #16304f;
-  --color-primary-soft: #e9eef4;
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #1e40af;
+  --color-primary-soft: #dbeafe;
 
-  --color-accent: #c2760c;
-  --color-accent-hover: #a3630a;
-  --color-accent-soft: #fbf1e2;
+  --color-accent: #d97706;
+  --color-accent-hover: #b45309;
+  --color-accent-soft: #fef3c7;
 
-  --color-danger: #b42318;
-  --color-danger-hover: #931c14;
-  --color-danger-soft: #fbeceb;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: #fee2e2;
 
-  --color-success: #067647;
-  --color-success-soft: #e7f6ef;
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-sm: 0 1px 3px rgba(30, 58, 138, 0.12);
+  --shadow-md: 0 4px 12px rgba(30, 58, 138, 0.15);
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -122,8 +122,9 @@ label {
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   padding: 32px 36px;
 }
 
@@ -163,6 +164,8 @@ label {
 .btn-primary {
   background: var(--color-accent);
   color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
@@ -170,11 +173,12 @@ label {
 
 .btn-secondary {
   background: var(--color-surface);
-  color: var(--color-text);
-  border-color: var(--color-border-strong);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: var(--color-primary-soft);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btn-danger {
@@ -216,7 +220,7 @@ label {
   display: flex;
   gap: 4px;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .seccion-nav-link {
@@ -226,8 +230,8 @@ label {
   font-weight: 500;
   color: var(--color-text-muted);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
   transition: color 0.12s ease, border-color 0.12s ease;
 }
 
@@ -237,8 +241,8 @@ label {
 
 .seccion-nav-link.is-active {
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-  font-weight: 600;
+  border-bottom-color: var(--color-accent);
+  font-weight: 700;
 }
 
 /* ===== INPUTS ===== */
@@ -269,8 +273,9 @@ label {
 .input:disabled,
 .select:disabled,
 .input[readonly] {
-  background: #f1f2f4;
-  color: var(--color-text-muted);
+  background: #fef3c7;
+  color: #78350f;
+  border-color: #fbbf24;
 }
 
 .input-mono {
@@ -356,10 +361,10 @@ thead th {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-  background: #fafbfc;
+  color: #ffffff;
+  background: var(--color-primary);
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 3px solid var(--color-accent);
 }
 
 tbody td {
@@ -377,8 +382,12 @@ tbody tr {
   transition: background 0.1s ease;
 }
 
+tbody tr:nth-child(even) {
+  background: #f1f6ff;
+}
+
 tbody tr:hover {
-  background: #fafbfc;
+  background: var(--color-primary-soft);
 }
 
 tbody tr.is-selected {
@@ -430,8 +439,8 @@ tbody tr.is-selected {
 }
 
 .badge-role-usuario {
-  background: #eef0f3;
-  color: var(--color-text-muted);
+  background: #e2e8f0;
+  color: #334155;
 }
 
 .badge-anulado {
@@ -448,7 +457,7 @@ tbody tr.is-selected {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(26, 34, 51, 0.5);
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -460,7 +469,7 @@ tbody tr.is-selected {
   background: var(--color-surface);
   border-radius: 10px;
   border: 1px solid var(--color-border);
-  box-shadow: 0 20px 50px rgba(26, 34, 51, 0.25);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
   width: 100%;
   max-width: 760px;
   max-height: 85vh;
@@ -522,13 +531,13 @@ tbody tr.is-selected {
 .message-error {
   background: var(--color-danger-soft);
   color: var(--color-danger);
-  border: 1px solid #f3c9c5;
+  border: 1px solid #fca5a5;
 }
 
 .message-success {
   background: var(--color-success-soft);
   color: var(--color-success);
-  border: 1px solid #b9e4cd;
+  border: 1px solid #86efac;
 }
 
 /* ===== LOGIN ===== */
@@ -551,24 +560,21 @@ tbody tr.is-selected {
   font-size: 13px;
 }
 
-/* Agregar esto a tu hoja de estilos global, junto a las demás clases
-   (.page, .badge, .btn, .table-wrap, .seccion-nav, etc). Nada de esto
-   reemplaza lo que ya tienes, son clases nuevas que usa UsuariosAdmin. */
-
+/* ===== USUARIOS ADMIN ===== */
 .badge-active {
-  background: #E3F5EA;
-  color: #1F9254;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .badge-inactive {
-  background: #FCEAEA;
-  color: #D64545;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .modal-fondo {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.45);
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,7 +604,7 @@ tbody tr.is-selected {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #4B5563;
+  color: #334155;
   margin-bottom: 6px;
 }
 
@@ -608,10 +614,13 @@ tbody tr.is-selected {
   gap: 10px;
   margin-top: 22px;
 }
+
 .badge-aprobado {
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
+
+/* ===== AUTOCOMPLETE ===== */
 .autocomplete {
   position: relative;
 }
@@ -641,4 +650,107 @@ tbody tr.is-selected {
 
 .autocomplete-lista li:hover {
   background: var(--color-primary-soft);
+}
+/* =====================================================================
+   RESPONSIVE GLOBAL (tablet 10-12" y teléfono)
+   Pegar AL FINAL de la hoja global
+   ===================================================================== */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Pantallas táctiles: botones y campos de tamaño cómodo para el dedo */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 40px;
+  }
+  .input,
+  .select {
+    min-height: 40px;
+  }
+  tbody td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}
+
+/* Tablet (600px a 1099px) */
+@media (min-width: 600px) and (max-width: 1099px) {
+  .page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .searchbar .input {
+    flex: 1 1 260px;
+  }
+  .table-wrap-scroll {
+    max-height: 62vh;
+  }
+}
+
+/* Teléfono (hasta 599px) */
+@media (max-width: 599px) {
+  .page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* 16px evita el zoom automático de iOS al enfocar un campo */
+  .input,
+  .select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .user-chip {
+    gap: 8px;
+  }
+
+  /* Pestañas Parte de Trabajo / Parte de Parada: se deslizan si no caben */
+  .seccion-nav {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .seccion-nav-link {
+    padding: 10px 12px;
+  }
+
+  /* Botones de acción: dos por fila */
+  .actions-row {
+    gap: 8px;
+  }
+  .actions-row .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .table-wrap-scroll {
+    max-height: 60vh;
+  }
+
+  /* Modales */
+  .modal-overlay {
+    padding: 8px;
+  }
+  .modal-panel {
+    padding: 14px;
+    max-height: 92vh;
+  }
+  .modal-fondo {
+    padding: 8px;
+  }
+  .modal-card {
+    padding: 20px;
+    max-width: 100%;
+  }
+  .modal-botones {
+    flex-wrap: wrap;
+  }
+  .modal-botones .btn {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
 }

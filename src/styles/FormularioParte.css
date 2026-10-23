@@ -1,122 +1,423 @@
-/* Estilos de la grilla de "Detalle de viajes" en FormularioParte.
-   Pensados para uso en tablet: celdas con área táctil de 44px,
-   scroll horizontal cuando la tabla no entra, encabezado sticky. */
-
-.parte-grid {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border: 1px solid #c9c9c9;
-  border-radius: 6px;
+/* ===== MODO COMPACTO (Parte y Parada) ===== */
+.formulario-parte-page {
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
-
-.parte-grid table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 980px; /* evita que las columnas se aplasten en tablet; se scrollea horizontal */
+.formulario-parte-page .page-header {
+  margin-bottom: 4px;
+}
+.formulario-parte-page .page-header h2 {
+  font-size: 18px;
+}
+.formulario-parte-page > .btn-ghost {
+  margin-bottom: 6px !important; /* pisa el style inline del botón "Volver" */
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.formulario-parte-page .card {
+  padding: 14px 18px;
+}
+.formulario-parte-page .form-section {
+  margin-bottom: 12px;
+}
+.formulario-parte-page .form-section-title {
+  font-size: 12.5px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+}
+.formulario-parte-page .grid-3 {
+  gap: 8px 12px;
+}
+.formulario-parte-page .grid-3 > div:empty {
+  display: none; /* oculta los <div></div> de relleno */
+}
+.formulario-parte-page .field {
+  margin-bottom: 0;
+}
+.formulario-parte-page .field > label {
+  font-size: 11.5px;
+  margin-bottom: 2px;
+}
+.formulario-parte-page .input,
+.formulario-parte-page .select {
+  height: 32px;
+  padding: 4px 8px;
   font-size: 13px;
-  background: #fff;
 }
 
-.parte-grid thead th {
+/* Turno: radios en una sola línea (arregla el radio estirado) */
+.formulario-parte-page .turno-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 32px;
+}
+.formulario-parte-page .turno-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 !important;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.formulario-parte-page .field input[type="radio"] {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tablet: 3 columnas */
+@media (min-width: 600px) and (max-width: 1099px) {
+  .formulario-parte-page .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Escritorio: 6 columnas y la pantalla entra completa */
+@media (min-width: 1100px) {
+  .formulario-parte-page .grid-3 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .formulario-parte-page .form-section > p.cell-muted {
+    display: none; /* el aviso de deslizar no hace falta en escritorio */
+  }
+}
+
+@media (min-width: 1100px) and (min-height: 620px) {
+  .formulario-parte-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .formulario-parte-page .card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .formulario-parte-page .card > fieldset {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .formulario-parte-page .card > fieldset > form {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .formulario-parte-page form > * {
+    flex-shrink: 0;
+  }
+  /* El detalle ocupa el espacio que sobra y scrollea por dentro */
+  .formulario-parte-page form > .form-section--detalle {
+    flex: 1 1 auto;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+  }
+  .formulario-parte-page .form-section--detalle .parte-grid {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  .formulario-parte-page form > .btn-primary {
+    align-self: flex-start;
+    margin-top: 10px;
+  }
+}
+
+/* Con mouse no hace falta la altura de 44px pensada para el dedo */
+@media (pointer: fine) {
+  .parte-grid tbody td,
+  .parte-grid td input,
+  .parte-grid td select,
+  .parte-grid .row-remove {
+    height: 34px;
+  }
+}
+@media (min-width: 1100px) {
+  .formulario-parte-page .form-section--detalle .parte-grid {
+    overflow-x: hidden !important;
+  }
+
+  .formulario-parte-page .form-section--detalle .parte-grid table.detail-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .formulario-parte-page .parte-grid table.detail-table th,
+  .formulario-parte-page .parte-grid table.detail-table td {
+    min-width: 0 !important;
+    padding: 2px 3px !important;
+    overflow: hidden;
+  }
+
+  .formulario-parte-page .parte-grid table.detail-table thead th {
+    font-size: 10px !important;
+    line-height: 1.15;
+    white-space: normal !important;
+    text-align: center;
+    letter-spacing: 0 !important;
+    padding: 4px 2px !important;
+  }
+
+  .formulario-parte-page .parte-grid table.detail-table td input,
+  .formulario-parte-page .parte-grid table.detail-table td select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 28px !important;
+    padding: 2px 4px !important;
+    font-size: 12px !important;
+    text-overflow: ellipsis;
+  }
+
+  /* Sin flechitas en los number */
+  .formulario-parte-page .parte-grid input[type="number"]::-webkit-outer-spin-button,
+  .formulario-parte-page .parte-grid input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .formulario-parte-page .parte-grid input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .formulario-parte-page .parte-grid .row-remove {
+    width: 24px;
+    height: 24px !important;
+    padding: 0;
+  }
+
+  /* Botón "+ Agregar" no ocupa todo el ancho */
+  .formulario-parte-page .form-section--detalle > .btn-secondary {
+    width: auto !important;
+    padding: 4px 10px;
+    font-size: 12px;
+    margin-top: 6px !important;
+  }
+
+  /* ---- Parte de Trabajo (14 columnas) ---- */
+  .detail-table--parte th:nth-child(1)  { width: 2.5%; }  /* #  */
+  .detail-table--parte th:nth-child(2)  { width: 6.5%; }  /* Horómetro final */
+  .detail-table--parte th:nth-child(3)  { width: 6.5%; }  /* Km final */
+  .detail-table--parte th:nth-child(4)  { width: 7%; }    /* Código material */
+  .detail-table--parte th:nth-child(5)  { width: 11%; }   /* Material */
+  .detail-table--parte th:nth-child(6)  { width: 8%; }    /* N° vale */
+  .detail-table--parte th:nth-child(7)  { width: 8%; }    /* Ciclo */
+  .detail-table--parte th:nth-child(8)  { width: 6%; }    /* Horas */
+  .detail-table--parte th:nth-child(9)  { width: 11%; }   /* Origen */
+  .detail-table--parte th:nth-child(10) { width: 11%; }   /* Destino */
+  .detail-table--parte th:nth-child(11) { width: 6%; }    /* Viajes */
+  .detail-table--parte th:nth-child(12) { width: 6%; }    /* Total horas */
+  .detail-table--parte th:nth-child(13) { width: 6.5%; }  /* Peso */
+  .detail-table--parte th:nth-child(14) { width: 2.5%; }  /* quitar */
+
+  /* ---- Parada (6 columnas) ---- */
+  .detail-table--parada th:nth-child(1) { width: 3%; }
+  .detail-table--parada th:nth-child(2) { width: 12%; }
+  .detail-table--parada th:nth-child(3) { width: 12%; }
+  .detail-table--parada th:nth-child(4) { width: 25%; }
+  .detail-table--parada th:nth-child(6) { width: 3%; }
+  /* la columna Observación toma el resto */
+}
+/* ===== COLORES VIVOS Y DISTINGUIBLES (Parte y Parada) ===== */
+.formulario-parte-page {
+  --fp-bg: #eef3fb;            /* fondo de la página */
+  --fp-primary: #1d4ed8;       /* azul principal */
+  --fp-primary-dark: #1e3a8a;  /* azul oscuro (encabezados) */
+  --fp-accent: #f59e0b;        /* ámbar de acento */
+  --fp-success: #16a34a;
+  --fp-danger: #dc2626;
+  --fp-border: #94a3b8;        /* borde de campos, bien visible */
+  --fp-readonly: #fef3c7;      /* campos calculados / solo lectura */
+  --fp-text: #0f172a;
+
+  background: var(--fp-bg);
+  color: var(--fp-text);
+}
+
+/* Cabecera */
+.formulario-parte-page .page-header h2 {
+  color: var(--fp-primary-dark);
+  font-weight: 800;
+}
+.formulario-parte-page .user-chip strong {
+  color: var(--fp-primary-dark);
+}
+.formulario-parte-page > .btn-ghost {
+  color: var(--fp-primary);
+  font-weight: 600;
+}
+.formulario-parte-page > .btn-ghost:hover {
+  color: var(--fp-primary-dark);
+  background: #dbeafe;
+}
+
+/* Tarjeta con franja superior de color */
+.formulario-parte-page .card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-top: 4px solid var(--fp-primary);
+  box-shadow: 0 4px 14px rgba(30, 58, 138, 0.12);
+}
+
+/* Títulos de sección con barra lateral de color */
+.formulario-parte-page .form-section-title {
+  color: var(--fp-primary-dark);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-left: 4px solid var(--fp-accent);
+  border-bottom: 2px solid #dbeafe;
+  padding-left: 8px;
+  background: linear-gradient(90deg, #eff6ff, transparent);
+}
+
+/* Etiquetas */
+.formulario-parte-page .field > label {
+  color: #334155;
+  font-weight: 700;
+}
+
+/* Campos: borde claro y foco vistoso */
+.formulario-parte-page .input,
+.formulario-parte-page .select {
+  background: #ffffff;
+  border: 1.5px solid var(--fp-border);
+  color: var(--fp-text);
+}
+.formulario-parte-page .input:focus,
+.formulario-parte-page .select:focus,
+.formulario-parte-page .parte-grid td input:focus,
+.formulario-parte-page .parte-grid td select:focus {
+  outline: none;
+  border-color: var(--fp-primary);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.25);
+  background: #f8fbff;
+}
+
+/* Campos de solo lectura / calculados: color distinto para reconocerlos */
+.formulario-parte-page .input[readonly],
+.formulario-parte-page .parte-grid td input[readonly] {
+  background: var(--fp-readonly);
+  border-color: #fbbf24;
+  color: #78350f;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Radios de turno */
+.formulario-parte-page .field input[type="radio"] {
+  accent-color: var(--fp-primary);
+}
+.formulario-parte-page .turno-group label {
+  font-weight: 600;
+}
+
+/* Tabla de detalle */
+.formulario-parte-page .table-wrap.parte-grid {
+  border: 2px solid var(--fp-primary);
+  border-radius: 8px;
+  background: #ffffff;
+}
+.formulario-parte-page .parte-grid thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #eef1f5;
-  border: 1px solid #c9c9c9;
-  padding: 10px 8px;
-  text-align: center;
+  background: var(--fp-primary-dark);
+  color: #ffffff;
   font-weight: 700;
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  color: #3a3a3a;
+  border-bottom: 3px solid var(--fp-accent);
 }
-
-.parte-grid tbody td {
-  border: 1px solid #e0e0e0;
-  padding: 0;
+.formulario-parte-page .parte-grid tbody tr:nth-child(even) {
+  background: #eff6ff;
+}
+.formulario-parte-page .parte-grid tbody tr:hover {
+  background: #dbeafe;
+}
+.formulario-parte-page .parte-grid td input,
+.formulario-parte-page .parte-grid td select {
+  border: 1.5px solid var(--fp-border);
+  background: #ffffff;
+  color: var(--fp-text);
+}
+.formulario-parte-page .parte-grid tbody td:first-child {
+  font-weight: 800;
+  color: var(--fp-primary-dark);
   text-align: center;
-  height: 44px; /* alto pensado para dedo, no solo mouse */
-  min-width: 90px;
 }
 
-.parte-grid tbody td:first-child {
-  background: #f5f6f8;
+/* Botones */
+.formulario-parte-page .btn-primary {
+  background: linear-gradient(180deg, #22c55e, var(--fp-success));
+  border: 1px solid #15803d;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.4);
+}
+.formulario-parte-page .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #16a34a, #15803d);
+}
+.formulario-parte-page .btn-primary:disabled {
+  background: #94a3b8;
+  border-color: #64748b;
+  box-shadow: none;
+}
+.formulario-parte-page .btn-secondary {
+  background: #dbeafe;
+  border: 1.5px solid var(--fp-primary);
+  color: var(--fp-primary-dark);
   font-weight: 700;
-  width: 36px;
-  min-width: 36px;
-  color: #555;
+}
+.formulario-parte-page .btn-secondary:hover {
+  background: var(--fp-primary);
+  color: #ffffff;
+}
+.formulario-parte-page .row-remove {
+  background: #fee2e2;
+  border: 1.5px solid var(--fp-danger);
+  color: var(--fp-danger);
+  font-weight: 800;
+  border-radius: 6px;
+}
+.formulario-parte-page .row-remove:hover {
+  background: var(--fp-danger);
+  color: #ffffff;
 }
 
-.parte-grid tbody tr:nth-child(even) td {
-  background: #fafbfc;
+/* Mensajes */
+.formulario-parte-page .message-error {
+  background: #fee2e2;
+  border: 1.5px solid var(--fp-danger);
+  color: #991b1b;
+  font-weight: 600;
+}
+.formulario-parte-page .message-success {
+  background: #dcfce7;
+  border: 1.5px solid var(--fp-success);
+  color: #166534;
+  font-weight: 600;
 }
 
-.parte-grid tbody tr:nth-child(even) td:first-child {
-  background: #f0f1f3;
+/* Modal selector de Parte de Trabajo (solo en Parada) */
+.formulario-parte-page .modal-panel {
+  border-top: 4px solid var(--fp-primary);
 }
-
-.parte-grid tbody tr:hover td {
-  background: #eef4ff;
+.formulario-parte-page .modal-header h3 {
+  color: var(--fp-primary-dark);
 }
-
-.parte-grid td input,
-.parte-grid td select {
-  width: 100%;
-  height: 44px;
-  border: none;
-  background: transparent;
-  text-align: center;
-  font-size: 13px;
-  padding: 4px 8px;
-  box-sizing: border-box;
-  color: #222;
+.formulario-parte-page .modal-panel thead th {
+  background: var(--fp-primary-dark);
+  color: #ffffff;
 }
-
-.parte-grid td input[type="number"] {
-  text-align: right;
-  padding-right: 10px;
-}
-
-.parte-grid td select {
-  cursor: pointer;
-}
-
-.parte-grid td input:focus,
-.parte-grid td select:focus {
-  outline: none;
-  box-shadow: inset 0 0 0 2px #2f6fdb;
-  background: #f2f7ff;
-  position: relative;
-  z-index: 1;
-}
-
-.parte-grid td input[readOnly] {
-  color: #666;
-  background: #fbfbfb;
-}
-
-.parte-grid .row-remove {
-  width: 36px;
-  height: 44px;
-  border: none;
-  background: transparent;
-  color: #c0392b;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.parte-grid .row-remove:hover {
-  background: #fdeaea;
-}
-
-/* Tablets: un poco más compacto pero sin perder área táctil */
-@media (max-width: 1024px) {
-  .parte-grid table {
-    font-size: 12.5px;
-  }
-  .parte-grid thead th {
-    padding: 8px 6px;
-    font-size: 11px;
-  }
+.formulario-parte-page .modal-panel tbody tr:hover {
+  background: #dbeafe;
 }
