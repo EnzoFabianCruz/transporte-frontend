@@ -421,3 +421,34 @@
 .formulario-parte-page .modal-panel tbody tr:hover {
   background: #dbeafe;
 }
+/* ===== Combo de Ciclo (escribir + filtrar) ===== */
+/* El input hereda los estilos de ".parte-grid td input"; solo falta la lista.
+   Es "fixed" para que no la recorte el overflow de la tabla. */
+.formulario-parte-page .combo-ciclo-lista {
+  position: fixed;
+  z-index: 1000;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #ffffff;
+  color: var(--fp-text);
+  border: 1.5px solid var(--fp-primary);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(30, 58, 138, 0.25);
+}
+.formulario-parte-page .combo-ciclo-lista li {
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.formulario-parte-page .combo-ciclo-lista li.activo {
+  background: #dbeafe;
+  color: var(--fp-primary-dark);
+}
+.formulario-parte-page .combo-ciclo-lista li.combo-ciclo-vacio {
+  color: #64748b;
+  cursor: default;
+}

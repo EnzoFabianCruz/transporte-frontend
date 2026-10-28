@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
 import { useAuth } from "../context/AuthContext";
@@ -49,6 +49,135 @@ const norm = (v) => String(v ?? "").trim().toUpperCase();
 const mCodigo = (m) => m?.codigoM ?? m?.codigom ?? "";
 const mNombre = (m) => m?.nombreM ?? m?.nombrem ?? "";
 
+// Quita tildes y mayúsculas para filtrar
+const limpiar = (v) =>
+  String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+// Campo de Ciclo: se puede escribir y la lista se filtra mientras se escribe
+function ComboCiclo({ ciclos, seleccionado, onSelect }) {
+  const [texto, setTexto] = useState("");
+  const [escribio, setEscribio] = useState(false);
+  const [abierto, setAbierto] = useState(false);
+  const [activo, setActivo] = useState(0);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const inputRef = useRef(null);
+
+  const etiqueta = seleccionado?.valor ?? "";
+
+  const filtrados = escribio
+    ? ciclos.filter((c) =>
+        limpiar(`${c.valor} ${c.nombreOrigen} ${c.nombreDestino} ${c.horas}`).includes(
+          limpiar(texto)
+        )
+      )
+    : ciclos;
+
+  const calcularPos = () => {
+    const r = inputRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom, left: r.left, width: Math.max(r.width, 320) });
+  };
+
+  // Mientras está abierto, reposiciona al hacer scroll/resize
+  // (la lista es "fixed" para que no la recorte el scroll de la tabla)
+  useEffect(() => {
+    if (!abierto) return;
+    calcularPos();
+    window.addEventListener("scroll", calcularPos, true);
+    window.addEventListener("resize", calcularPos);
+    return () => {
+      window.removeEventListener("scroll", calcularPos, true);
+      window.removeEventListener("resize", calcularPos);
+    };
+  }, [abierto]);
+
+  const abrir = () => {
+    setTexto(etiqueta);
+    setEscribio(false);
+    setActivo(0);
+    setAbierto(true);
+  };
+
+  const elegir = (c) => {
+    onSelect(c ? c.codigoCiclo?.trim() : "");
+    setAbierto(false);
+    setEscribio(false);
+  };
+
+  const cerrar = () => {
+    // Si borró todo el texto, se limpia la selección
+    if (escribio && texto.trim() === "") onSelect("");
+    setAbierto(false);
+    setEscribio(false);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!abierto) return abrir();
+      setActivo((a) => Math.min(a + 1, filtrados.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActivo((a) => Math.max(a - 1, 0));
+    } else if (e.key === "Enter" && abierto) {
+      e.preventDefault(); // evita enviar el formulario
+      if (filtrados[activo]) elegir(filtrados[activo]);
+    } else if (e.key === "Escape") {
+      setAbierto(false);
+      setEscribio(false);
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="text"
+        className="combo-ciclo-input"
+        placeholder="Buscar ciclo..."
+        autoComplete="off"
+        value={abierto ? texto : etiqueta}
+        onFocus={(e) => {
+          abrir();
+          e.target.select();
+        }}
+        onChange={(e) => {
+          setTexto(e.target.value);
+          setEscribio(true);
+          setActivo(0);
+          if (!abierto) setAbierto(true);
+        }}
+        onBlur={cerrar}
+        onKeyDown={onKeyDown}
+      />
+      {abierto && (
+        <ul
+          className="combo-ciclo-lista"
+          style={{ top: pos.top, left: pos.left, minWidth: pos.width }}
+        >
+          {filtrados.length === 0 && <li className="combo-ciclo-vacio">Sin resultados</li>}
+          {filtrados.map((c, idx) => (
+            <li
+              key={c.codigoCiclo}
+              className={idx === activo ? "activo" : ""}
+              // onMouseDown + preventDefault evita que el input pierda foco antes del click
+              onMouseDown={(e) => {
+                e.preventDefault();
+                elegir(c);
+              }}
+              onMouseEnter={() => setActivo(idx)}
+            >
+              {c.valor} - {c.nombreOrigen} - {c.nombreDestino} - {c.horas}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 export default function FormularioParte() {
   const { usuario, logout } = useAuth();
   const { numeroParte } = useParams();
@@ -71,7 +200,6 @@ export default function FormularioParte() {
   const [cabecera, setCabecera] = useState(cabeceraVacia);
   const [detalles, setDetalles] = useState([{ ...detalleVacio }]);
   const [selAbierto, setSelAbierto] = useState(null);
-  const [cicloAbierto, setCicloAbierto] = useState(null);
 
   // Fuera de plazo: un operador/supervisor no puede modificar partes de más de 1 día
   const bloqueadoPorFecha =
@@ -655,34 +783,34 @@ export default function FormularioParte() {
                           />
                         </td>
                         <td>
-                        <select
-                          value={mCodigo(materialDeDetalle(d)).trim()}
-                          onMouseDown={() => setSelAbierto(i)}
-                          onFocus={() => setSelAbierto(i)}
-                          onBlur={() => setSelAbierto(null)}
-                          onChange={(e) => {
-                            handleMaterialChange(i, e.target.value);
-                            setSelAbierto(null);
-                          }}
-                        >
-                          <option value="">-- Seleccione --</option>
-                          {materiales.map((m) => (
-                            <option key={mCodigo(m)} value={mCodigo(m).trim()}>
-                              {selAbierto === i
-                                ? `${m.abreviatura} - ${mNombre(m)}`
-                                : m.abreviatura}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={mNombre(materialDeDetalle(d))}
-                          readOnly
-                          tabIndex={-1}
-                        />
-                      </td>
+                          <select
+                            value={mCodigo(materialDeDetalle(d)).trim()}
+                            onMouseDown={() => setSelAbierto(i)}
+                            onFocus={() => setSelAbierto(i)}
+                            onBlur={() => setSelAbierto(null)}
+                            onChange={(e) => {
+                              handleMaterialChange(i, e.target.value);
+                              setSelAbierto(null);
+                            }}
+                          >
+                            <option value="">-- Seleccione --</option>
+                            {materiales.map((m) => (
+                              <option key={mCodigo(m)} value={mCodigo(m).trim()}>
+                                {selAbierto === i
+                                  ? `${m.abreviatura} - ${mNombre(m)}`
+                                  : m.abreviatura}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={mNombre(materialDeDetalle(d))}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                        </td>
                         <td>
                           <input
                             type="text"
@@ -693,25 +821,11 @@ export default function FormularioParte() {
                           />
                         </td>
                         <td>
-                          <select
-                            value={cicloDeDetalle(d)?.codigoCiclo?.trim() ?? ""}
-                            onMouseDown={() => setCicloAbierto(i)}
-                            onFocus={() => setCicloAbierto(i)}
-                            onBlur={() => setCicloAbierto(null)}
-                            onChange={(e) => {
-                              handleCicloChange(i, e.target.value);
-                              setCicloAbierto(null);
-                            }}
-                          >
-                            <option value="">-- Seleccione --</option>
-                            {ciclos.map((c) => (
-                              <option key={c.codigoCiclo} value={c.codigoCiclo?.trim()}>
-                                {cicloAbierto === i
-                                  ? `${c.valor} - ${c.nombreOrigen} - ${c.nombreDestino} - ${c.horas}`
-                                  : c.valor}
-                              </option>
-                            ))}
-                          </select>
+                          <ComboCiclo
+                            ciclos={ciclos}
+                            seleccionado={cicloDeDetalle(d)}
+                            onSelect={(codigo) => handleCicloChange(i, codigo)}
+                          />
                         </td>
                         <td>
                           <input type="text" value={cicloDeDetalle(d)?.horas ?? ""} readOnly tabIndex={-1} />
