@@ -386,7 +386,7 @@ export default function FormularioParte() {
     nuevos[index] = {
       ...nuevos[index],
       codigoCiclo: codigoCiclo,
-      valorCiclo: ciclo?.horas != null ? String(ciclo.horas) : "",
+      valorCiclo: ciclo?.valor?.trim() || "", // CORREGIDO: el valor del ciclo (ej. CC1-REL), no las horas
       codigoOrigen: ciclo?.codigoOrigen || "",
       codigoDestino: ciclo?.codigoDestino || "",
     };
@@ -460,7 +460,7 @@ export default function FormularioParte() {
           numViajes: d.numViajes ? parseInt(d.numViajes) : null,
           peso: d.peso ? parseFloat(d.peso) : null,
           codigoCiclo: ciclo?.codigoCiclo?.trim() || d.codigoCiclo || null,
-          valorCiclo: ciclo?.horas != null ? String(ciclo.horas) : d.valorCiclo || null,
+          valorCiclo: ciclo?.valor?.trim() || d.valorCiclo || null, // CORREGIDO: el valor del ciclo, no las horas
           material: mNombre(mat) || d.material || null,
           phoras: totalHoras !== "" ? totalHoras : null,
         };
