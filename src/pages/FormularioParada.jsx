@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
+import { getCatalogo } from "../offline/catalogos";
+import { registrarConRespaldo } from "../offline/registro";
+import {
+  obtenerPendiente,
+  partePendientePorNumero,
+  pendientesPropios,
+  esNumeroLocal,
+} from "../offline/outbox";
+import { esErrorDeRed } from "../offline/conexion";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import { estadoLabel, estadoBadgeClass } from "../utils/estado.js";
@@ -38,6 +47,8 @@ export default function FormularioParada() {
   const navigate = useNavigate();
 
   const modo = numeroParada ? searchParams.get("modo") || "editar" : "crear"; // "crear" | "editar" | "ver"
+  // Si viene ?pendiente=<id> se está corrigiendo un registro guardado sin conexión (aún no enviado)
+  const pendienteId = searchParams.get("pendiente");
 
   const [operadores, setOperadores] = useState([]);
   const [supervisores, setSupervisores] = useState([]);
@@ -46,7 +57,7 @@ export default function FormularioParada() {
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [cargandoDatos, setCargandoDatos] = useState(!!numeroParada);
+  const [cargandoDatos, setCargandoDatos] = useState(!!numeroParada || !!pendienteId);
   const [buscandoParte, setBuscandoParte] = useState(false);
   const [avisoParte, setAvisoParte] = useState(""); // mensaje de estado al buscar el N° Parte
 
@@ -72,23 +83,19 @@ export default function FormularioParada() {
 
   // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Motivo)
   useEffect(() => {
-    api
-      .get("/Personal/operadores")
+    getCatalogo("/Personal/operadores")
       .then((res) => setOperadores(res.data))
       .catch(() => setError("No se pudo cargar la lista de operadores"));
 
-    api
-      .get("/Personal/supervisores")
+    getCatalogo("/Personal/supervisores")
       .then((res) => setSupervisores(res.data))
       .catch(() => setError("No se pudo cargar la lista de supervisores"));
 
-    api
-      .get("/UnidadesTransporte")
+    getCatalogo("/UnidadesTransporte")
       .then((res) => setUnidades(res.data))
       .catch(() => setError("No se pudo cargar la lista de unidades"));
 
-    api
-      .get("/Motivos")
+    getCatalogo("/Motivos")
       .then((res) => setMotivos(res.data))
       .catch(() => setError("No se pudo cargar la lista de motivos"));
   }, []);
@@ -109,8 +116,7 @@ export default function FormularioParada() {
     if (!numeroParada) return;
 
     setCargandoDatos(true);
-    api
-      .get(`/ParteParada/${numeroParada}`)
+    getCatalogo(`/ParteParada/${numeroParada}`)
       .then((res) => {
         const d = res.data;
         setCabecera({
@@ -145,9 +151,26 @@ export default function FormularioParada() {
       .finally(() => setCargandoDatos(false));
   }, [numeroParada]);
 
-  // Si estamos creando uno nuevo, traer el número de parada sugerido
+  // Corrigiendo un registro pendiente: cargar lo que se guardó en la tablet
   useEffect(() => {
-    if (modo === "crear") {
+    if (!pendienteId) return;
+    obtenerPendiente(pendienteId)
+      .then((item) => {
+        if (!item) {
+          setError("Este registro pendiente ya no existe (puede que ya se haya enviado).");
+          return;
+        }
+        setCabecera(item.form.cabecera);
+        setDetalles(item.form.detalles);
+      })
+      .catch(() => setError("No se pudo leer el registro guardado en la tablet"))
+      .finally(() => setCargandoDatos(false));
+  }, [pendienteId]);
+
+  // Si estamos creando uno nuevo, traer el número de parada sugerido
+  // (sin conexión queda vacío: el número se asigna al sincronizar)
+  useEffect(() => {
+    if (modo === "crear" && !pendienteId) {
       api
         .get("/ParteParada/siguiente-numero")
         .then((res) => {
@@ -155,7 +178,7 @@ export default function FormularioParada() {
         })
         .catch(() => {});
     }
-  }, [modo]);
+  }, [modo, pendienteId]);
 
   const handleCabeceraChange = (e) => {
     setCabecera({ ...cabecera, [e.target.name]: e.target.value });
@@ -170,7 +193,18 @@ export default function FormularioParada() {
 
     setBuscandoParte(true);
     try {
-      const res = await api.get(`/Formulario/${numero}`);
+      // Un parte creado sin conexión aún no existe en el servidor: se lee de la tablet
+      const local = partePendientePorNumero(numero);
+      const res = local
+        ? { data: { ...local.form.cabecera, numeroParte: local.numeroLocal } }
+        : await getCatalogo(`/Formulario/${numero}`).catch(async (err) => {
+            // Sin conexión y sin el detalle guardado: usar los datos de la fila de la lista guardada
+            if (!esErrorDeRed(err)) throw err;
+            const lista = await getCatalogo("/Formulario");
+            const fila = lista.data.find((p) => String(p.numeroParte).trim() === String(numero).trim());
+            if (!fila) throw err;
+            return { data: fila };
+          });
       const d = res.data;
       setCabecera((prev) => ({
         ...prev,
@@ -193,6 +227,10 @@ export default function FormularioParada() {
     } catch (err) {
       if (err.response?.status === 404) {
         setAvisoParte(`No se encontró el Parte de Trabajo N° ${numero}`);
+      } else if (esErrorDeRed(err)) {
+        setAvisoParte(
+          `Sin conexión: no se pudo consultar el Parte de Trabajo N° ${numero}. Puedes continuar; se validará al enviar.`
+        );
       } else {
         setAvisoParte("No se pudo consultar el Parte de Trabajo");
       }
@@ -220,10 +258,27 @@ export default function FormularioParada() {
     if (!mostrarSelectorParte) return;
 
     setCargandoSelector(true);
-    api
-      .get("/Formulario", { params: busquedaSelectorDebounced ? { busqueda: busquedaSelectorDebounced } : {} })
-      .then((res) => setListaPartesSelector(res.data))
-      .catch(() => setListaPartesSelector([]))
+    const texto = busquedaSelectorDebounced.trim().toLowerCase();
+    // Partes creados sin conexión (aún no enviados) que coinciden con la búsqueda
+    const pendientes = pendientesPropios()
+      .filter((i) => i.tipo === "parte")
+      .map((i) => ({ ...i.form.cabecera, numeroParte: i.numeroLocal, situacionParte: "" }))
+      .filter((c) => !texto || String(c.numeroParte).toLowerCase().includes(texto));
+
+    getCatalogo("/Formulario", {
+      params: busquedaSelectorDebounced ? { busqueda: busquedaSelectorDebounced } : {},
+    })
+      .catch(async (err) => {
+        // Sin conexión y sin esa búsqueda guardada: filtrar localmente la lista completa guardada
+        if (!esErrorDeRed(err) || !texto) throw err;
+        const base = await getCatalogo("/Formulario");
+        return {
+          ...base,
+          data: base.data.filter((p) => JSON.stringify(Object.values(p)).toLowerCase().includes(texto)),
+        };
+      })
+      .then((res) => setListaPartesSelector([...pendientes, ...res.data]))
+      .catch(() => setListaPartesSelector(pendientes))
       .finally(() => setCargandoSelector(false));
   }, [mostrarSelectorParte, busquedaSelectorDebounced]);
 
@@ -252,6 +307,19 @@ export default function FormularioParada() {
 
     setError("");
     setMensaje("");
+
+    // Toda parada va ligada a un parte de trabajo (real o creado sin conexión)
+    const parteRef = cabecera.numeroParte?.trim();
+    if (!parteRef) {
+      setError("Debes elegir el Parte de Trabajo de esta parada (doble clic en el campo N° Parte).");
+      return;
+    }
+    if (esNumeroLocal(parteRef) && !partePendientePorNumero(parteRef)) {
+      setError(
+        `El parte de trabajo ${parteRef} ya no está guardado en la tablet. Elige otro parte.`
+      );
+      return;
+    }
     setEnviando(true);
 
     const payload = {
@@ -278,15 +346,30 @@ export default function FormularioParada() {
         await api.put(`/ParteParada/${cabecera.numeroParada}`, payload);
         setMensaje("Parada actualizada correctamente");
       } else {
-        await api.post("/ParteParada/registrar", payload);
-        setMensaje("Parada registrada correctamente");
+        // Con internet se envía; sin conexión se guarda en la tablet y se envía después
+        const r = await registrarConRespaldo({
+          tipo: "parada",
+          payload,
+          form: { cabecera, detalles },
+          usuario,
+          pendienteId,
+        });
+        setMensaje(
+          !r.guardadoLocal
+            ? "Parada registrada correctamente"
+            : r.motivo === "sesion"
+            ? "Tu sesión expiró. La parada se guardó en la tablet; inicia sesión de nuevo con internet para enviarla."
+            : "Parada guardada en la tablet. Se enviará automáticamente cuando haya internet."
+        );
       }
-      setTimeout(() => navigate("/paradas"), 1200);
+      setTimeout(() => navigate(pendienteId ? "/pendientes" : "/paradas"), 1200);
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Tu sesión expiró, vuelve a iniciar sesión");
+      } else if (esErrorDeRed(err)) {
+        setError("Sin conexión. Para modificar una parada ya registrada se necesita internet.");
       } else {
-        setError(err.response?.data?.mensaje || "Error al guardar la parada");
+        setError(err.response?.data?.mensaje || err.message || "Error al guardar la parada");
       }
     } finally {
       setEnviando(false);
@@ -386,6 +469,7 @@ export default function FormularioParada() {
                     type="text"
                     name="numeroParada"
                     value={cabecera.numeroParada || ""}
+                    placeholder="Se asigna al enviar"
                     readOnly
                   />
                 </div>

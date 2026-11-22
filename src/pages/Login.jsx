@@ -32,6 +32,10 @@ export default function Login() {
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Usuario o contraseña incorrectos");
+      } else if (!err.response) {
+        setError(
+          "Sin conexión con el servidor. Para iniciar sesión se necesita internet; después podrás trabajar sin conexión."
+        );
       } else {
         setError("Error al conectar con el servidor");
       }

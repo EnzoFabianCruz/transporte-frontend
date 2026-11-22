@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axiosConfig";
+import { getCatalogo } from "../offline/catalogos";
+import { esErrorDeRed, MENSAJE_SIN_CONEXION } from "../offline/conexion";
+import { useEstadoSync } from "../offline/sync";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce";
 import Layout from "../components/Layout";
@@ -20,6 +23,8 @@ export default function ListaParadas() {
   const [fechaHasta, setFechaHasta] = useState("");
   const [seleccionado, setSeleccionado] = useState(null);
   const [error, setError] = useState("");
+  const [datosGuardados, setDatosGuardados] = useState(false); // la lista viene de la copia guardada en la tablet
+  const { version: versionSync } = useEstadoSync(); // sube cuando se envían registros pendientes
   const [cargandoInicial, setCargandoInicial] = useState(true); // solo la primera carga muestra "Cargando..."
   const [buscando, setBuscando] = useState(false); // búsquedas posteriores solo bajan la opacidad
 
@@ -47,19 +52,21 @@ const handleAprobar = async (parada) => {
     await api.patch(`/ParteParada/${parada.numeroParada.trim()}/aprobar`);
     cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
   } catch (err) {
+    if (esErrorDeRed(err)) {
+      alert(MENSAJE_SIN_CONEXION);
+      return;
+    }
     alert(err.response?.data?.mensaje || "Error al aprobar la parada");
   }
 };
 
   // Carga los catálogos una sola vez (igual que en ListaPartes)
   useEffect(() => {
-    api
-      .get("/UnidadesTransporte")
+    getCatalogo("/UnidadesTransporte")
       .then((res) => setUnidades(res.data))
       .catch(() => {});
 
-    api
-      .get("/Personal/operadores")
+    getCatalogo("/Personal/operadores")
       .then((res) => setOperadores(res.data))
       .catch(() => {});
   }, []);
@@ -78,7 +85,7 @@ const handleAprobar = async (parada) => {
   // Se dispara automáticamente cada vez que cambia el valor "debounced" o las fechas
   useEffect(() => {
     cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
-  }, [busquedaDebounced, fechaDesde, fechaHasta]);
+  }, [busquedaDebounced, fechaDesde, fechaHasta, versionSync]);
 
   const cargarParadas = async (textoBusqueda = "", desde = "", hasta = "") => {
     setBuscando(true);
@@ -90,13 +97,18 @@ const handleAprobar = async (parada) => {
       if (desde) params.fechaDesde = desde;
       if (hasta) params.fechaHasta = hasta;
 
-      const respuesta = await api.get("/ParteParada", { params });
+      const respuesta = await getCatalogo("/ParteParada", { params });
       setParadas(respuesta.data);
+      setDatosGuardados(!!respuesta.desdeCache);
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Tu sesión expiró, vuelve a iniciar sesión");
       } else {
-        setError("No se pudo cargar la lista de paradas");
+        setError(
+          esErrorDeRed(err)
+            ? "Sin conexión y sin una copia guardada de esta lista. Igual puedes agregar un registro nuevo."
+            : "No se pudo cargar la lista de paradas"
+        );
       }
     } finally {
       setBuscando(false);
@@ -115,6 +127,10 @@ const handleAprobar = async (parada) => {
       await api.delete(`/ParteParada/${seleccionado.trim()}`);
       cargarParadas(busquedaDebounced, fechaDesde, fechaHasta);
     } catch (err) {
+      if (esErrorDeRed(err)) {
+        alert(MENSAJE_SIN_CONEXION);
+        return;
+      }
       alert(err.response?.data?.mensaje || "Error al eliminar la parada");
     }
   };
@@ -172,8 +188,22 @@ const handleAprobar = async (parada) => {
       {cargandoInicial && <p className="cell-muted">Cargando...</p>}
       {error && <div className="message message-error">{error}</div>}
 
+      {/* Sin lista (cargando o sin datos guardados) igual se puede agregar: el registro nuevo no necesita la lista */}
+      {(cargandoInicial || error) && (
+        <div className="actions-row">
+          <button className="btn btn-primary" onClick={() => navigate("/formulario-parada")}>
+            + Agregar
+          </button>
+        </div>
+      )}
+
       {!cargandoInicial && !error && (
         <div style={{ opacity: buscando ? 0.5 : 1, transition: "opacity 0.15s" }}>
+          {datosGuardados && (
+            <p className="cell-muted" style={{ fontSize: 12.5, marginBottom: 8 }}>
+              Sin conexión: se muestran los datos guardados en la tablet.
+            </p>
+          )}
           <div className="table-wrap table-wrap-scroll">
             <table>
               <thead>

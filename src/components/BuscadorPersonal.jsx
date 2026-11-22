@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import api from "../api/axiosConfig";
+import { getCatalogo } from "../offline/catalogos";
 
 // Autocompletar: escribe para filtrar, al elegir una opción devuelve el codigoPersonal
 export default function BuscadorPersonal({ value, onChange, placeholder = "Buscar por nombre o código..." }) {
@@ -9,7 +9,7 @@ export default function BuscadorPersonal({ value, onChange, placeholder = "Busca
   const contenedorRef = useRef(null);
 
   useEffect(() => {
-    api.get("/Personal").then((res) => setPersonal(res.data)).catch(() => {});
+    getCatalogo("/Personal").then((res) => setPersonal(res.data)).catch(() => {});
   }, []);
 
   // Si el value viene desde afuera (ej. al editar), muestra el nombre correspondiente

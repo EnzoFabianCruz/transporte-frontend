@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
@@ -8,7 +9,11 @@ import FormularioParada from "./pages/FormularioParada";
 import UsuariosAdmin from "./pages/Usuariosadmin";
 import RecuperarPassword from "./pages/Recuperarpassword";
 import RestablecerPassword from "./pages/Restablecerpassword";
-import MiPerfil from "./pages/MiPerfil"; 
+import MiPerfil from "./pages/MiPerfil";
+import Pendientes from "./pages/Pendientes";
+import BarraConexion from "./components/BarraConexion";
+import { iniciarSincronizacionAutomatica } from "./offline/sync";
+
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" />;
@@ -23,7 +28,18 @@ function RutaAdmin({ children }) {
 }
 
 function AppRoutes() {
+  const { usuario } = useAuth();
+
+  // Con sesión iniciada: descarga catálogos y envía los registros pendientes
+  // (al abrir, al volver el internet y cada 30 s mientras haya pendientes)
+  useEffect(() => {
+    if (!usuario) return;
+    return iniciarSincronizacionAutomatica();
+  }, [usuario]);
+
   return (
+    <>
+    <BarraConexion />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar-password" element={<RecuperarPassword />} />
@@ -35,9 +51,11 @@ function AppRoutes() {
       <Route path="/formulario-parada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/formulario-parada/:numeroParada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/usuarios" element={<RutaAdmin><UsuariosAdmin /></RutaAdmin>} />
-      <Route path="/mi-perfil" element={<RutaProtegida><MiPerfil /></RutaProtegida>} />  
+      <Route path="/mi-perfil" element={<RutaProtegida><MiPerfil /></RutaProtegida>} />
+      <Route path="/pendientes" element={<RutaProtegida><Pendientes /></RutaProtegida>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </>
   );
 }
 

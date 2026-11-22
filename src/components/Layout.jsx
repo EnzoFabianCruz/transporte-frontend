@@ -1,6 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-import SeccionNav from "./SeccionNav";
+import SeccionNav from "./Seccionnav";
 
 // Envuelve el header (título + chip de usuario + cerrar sesión) y el nav de
 // pestañas. Cada página solo pasa su título y su contenido (tabla, filtros, etc).

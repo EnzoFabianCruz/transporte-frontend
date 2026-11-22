@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/axiosConfig";
+import { getCatalogo } from "../offline/catalogos";
+import { registrarConRespaldo } from "../offline/registro";
+import { obtenerPendiente } from "../offline/outbox";
+import { esErrorDeRed } from "../offline/conexion";
 import { useAuth } from "../context/AuthContext";
 import {
   hoyLocal,
@@ -185,6 +189,8 @@ export default function FormularioParte() {
   const navigate = useNavigate();
 
   const modo = numeroParte ? searchParams.get("modo") || "editar" : "crear"; // "crear" | "editar" | "ver"
+  // Si viene ?pendiente=<id> se está corrigiendo un registro guardado sin conexión (aún no enviado)
+  const pendienteId = searchParams.get("pendiente");
 
   const [operadores, setOperadores] = useState([]);
   const [supervisores, setSupervisores] = useState([]);
@@ -194,7 +200,7 @@ export default function FormularioParte() {
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [cargandoDatos, setCargandoDatos] = useState(!!numeroParte);
+  const [cargandoDatos, setCargandoDatos] = useState(!!numeroParte || !!pendienteId);
   const [perfil, setPerfil] = useState(null);
 
   const [cabecera, setCabecera] = useState(cabeceraVacia);
@@ -233,28 +239,23 @@ export default function FormularioParte() {
 
   // Cargar catálogos para los selectores (Operador, Supervisado, Unidad, Ciclo, Material)
   useEffect(() => {
-    api
-      .get("/Personal/operadores")
+    getCatalogo("/Personal/operadores")
       .then((res) => setOperadores(res.data))
       .catch(() => setError("No se pudo cargar la lista de operadores"));
 
-    api
-      .get("/Personal/supervisores")
+    getCatalogo("/Personal/supervisores")
       .then((res) => setSupervisores(res.data))
       .catch(() => setError("No se pudo cargar la lista de supervisores"));
 
-    api
-      .get("/UnidadesTransporte")
+    getCatalogo("/UnidadesTransporte")
       .then((res) => setUnidades(res.data))
       .catch(() => setError("No se pudo cargar la lista de unidades"));
 
-    api
-      .get("/Ciclos")
+    getCatalogo("/Ciclos")
       .then((res) => setCiclos(res.data))
       .catch(() => setError("No se pudo cargar la lista de ciclos"));
 
-    api
-      .get("/Materiales")
+    getCatalogo("/Materiales")
       .then((res) => setMateriales(res.data))
       .catch(() => setError("No se pudo cargar la lista de materiales"));
   }, []);
@@ -264,8 +265,7 @@ export default function FormularioParte() {
     if (!numeroParte) return;
 
     setCargandoDatos(true);
-    api
-      .get(`/Formulario/${numeroParte}`)
+    getCatalogo(`/Formulario/${numeroParte}`)
       .then((res) => {
         const d = res.data;
         setCabecera({
@@ -307,9 +307,26 @@ export default function FormularioParte() {
       .finally(() => setCargandoDatos(false));
   }, [numeroParte]);
 
-  // Si estamos creando uno nuevo, traer el número de parte sugerido
+  // Corrigiendo un registro pendiente: cargar lo que se guardó en la tablet
   useEffect(() => {
-    if (modo === "crear") {
+    if (!pendienteId) return;
+    obtenerPendiente(pendienteId)
+      .then((item) => {
+        if (!item) {
+          setError("Este registro pendiente ya no existe (puede que ya se haya enviado).");
+          return;
+        }
+        setCabecera(item.form.cabecera);
+        setDetalles(item.form.detalles);
+      })
+      .catch(() => setError("No se pudo leer el registro guardado en la tablet"))
+      .finally(() => setCargandoDatos(false));
+  }, [pendienteId]);
+
+  // Si estamos creando uno nuevo, traer el número de parte sugerido
+  // (sin conexión queda vacío: el número se asigna al sincronizar)
+  useEffect(() => {
+    if (modo === "crear" && !pendienteId) {
       api
         .get("/Formulario/siguiente-numero")
         .then((res) => {
@@ -317,14 +334,13 @@ export default function FormularioParte() {
         })
         .catch(() => {});
     }
-  }, [modo]);
+  }, [modo, pendienteId]);
 
   // En modo crear: según el rol, completa Operador o Supervisado con el código del usuario, y la fecha = hoy
   useEffect(() => {
     if (modo !== "crear") return;
 
-    api
-      .get("/Usuarios/mi-perfil")
+    getCatalogo("/Usuarios/mi-perfil")
       .then((res) => {
         const p = res.data;
         const rol = p.rol || usuario?.rol;
@@ -333,6 +349,7 @@ export default function FormularioParte() {
         const supervisor = rolEsSupervisor(rol);
         setPerfil(p);
 
+        if (!pendienteId)
         setCabecera((prev) => ({
           ...prev,
           fechaParte: hoyLocal(),
@@ -350,7 +367,7 @@ export default function FormularioParte() {
         }
       })
       .catch(() => setError("No se pudo obtener los datos del usuario"));
-  }, [modo]);
+  }, [modo, pendienteId]);
 
   const handleCabeceraChange = (e) => {
     setCabecera({ ...cabecera, [e.target.name]: e.target.value });
@@ -472,15 +489,30 @@ export default function FormularioParte() {
         await api.put(`/Formulario/${cabecera.numeroParte}`, payload);
         setMensaje("Parte actualizado correctamente");
       } else {
-        await api.post("/Formulario/registrar", payload);
-        setMensaje("Parte registrado correctamente");
+        // Con internet se envía; sin conexión se guarda en la tablet y se envía después
+        const r = await registrarConRespaldo({
+          tipo: "parte",
+          payload,
+          form: { cabecera, detalles },
+          usuario,
+          pendienteId,
+        });
+        setMensaje(
+          !r.guardadoLocal
+            ? "Parte registrado correctamente"
+            : r.motivo === "sesion"
+            ? "Tu sesión expiró. El parte se guardó en la tablet; inicia sesión de nuevo con internet para enviarlo."
+            : "Parte guardado en la tablet. Se enviará automáticamente cuando haya internet."
+        );
       }
-      setTimeout(() => navigate("/"), 1200);
+      setTimeout(() => navigate(pendienteId ? "/pendientes" : "/"), 1200);
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Tu sesión expiró, vuelve a iniciar sesión");
+      } else if (esErrorDeRed(err)) {
+        setError("Sin conexión. Para modificar un parte ya registrado se necesita internet.");
       } else {
-        setError(err.response?.data?.mensaje || "Error al guardar el parte");
+        setError(err.response?.data?.mensaje || err.message || "Error al guardar el parte");
       }
     } finally {
       setEnviando(false);
@@ -541,6 +573,7 @@ export default function FormularioParte() {
                     type="text"
                     name="numeroParte"
                     value={cabecera.numeroParte || ""}
+                    placeholder="Se asigna al enviar"
                     readOnly
                   />
                 </div>
