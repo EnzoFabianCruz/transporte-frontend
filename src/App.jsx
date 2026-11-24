@@ -11,8 +11,10 @@ import RecuperarPassword from "./pages/Recuperarpassword";
 import RestablecerPassword from "./pages/Restablecerpassword";
 import MiPerfil from "./pages/MiPerfil";
 import Pendientes from "./pages/Pendientes";
+import Reportes from "./pages/Reportes";
 import BarraConexion from "./components/BarraConexion";
 import { iniciarSincronizacionAutomatica } from "./offline/sync";
+import { rolEsAdmin, rolEsSupervisor } from "./utils/permisos";
 
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
@@ -25,6 +27,13 @@ function RutaAdmin({ children }) {
   const { usuario } = useAuth();
   if (!usuario) return <Navigate to="/login" />;
   return usuario.rol === "Admin" ? children : <Navigate to="/" />;
+}
+
+// Exige rol Admin o Supervisor (reportes).
+function RutaAdminSupervisor({ children }) {
+  const { usuario } = useAuth();
+  if (!usuario) return <Navigate to="/login" />;
+  return rolEsAdmin(usuario.rol) || rolEsSupervisor(usuario.rol) ? children : <Navigate to="/" />;
 }
 
 function AppRoutes() {
@@ -51,6 +60,7 @@ function AppRoutes() {
       <Route path="/formulario-parada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/formulario-parada/:numeroParada" element={<RutaProtegida><FormularioParada /></RutaProtegida>} />
       <Route path="/usuarios" element={<RutaAdmin><UsuariosAdmin /></RutaAdmin>} />
+      <Route path="/reportes" element={<RutaAdminSupervisor><Reportes /></RutaAdminSupervisor>} />
       <Route path="/mi-perfil" element={<RutaProtegida><MiPerfil /></RutaProtegida>} />
       <Route path="/pendientes" element={<RutaProtegida><Pendientes /></RutaProtegida>} />
       <Route path="*" element={<Navigate to="/" />} />

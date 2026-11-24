@@ -1,10 +1,15 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePendientesPropios } from "../offline/outbox";
+import { useOnline } from "../offline/conexion";
+import { rolEsAdmin, rolEsSupervisor } from "../utils/permisos";
 
 export default function SeccionNav() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === "Admin";
+  const enLinea = useOnline();
+  // Reportes: solo Admin y Supervisor, y solo con conexión
+  const puedeVerReportes = rolEsAdmin(usuario?.rol) || rolEsSupervisor(usuario?.rol);
   const pendientes = usePendientesPropios().length;
 
   return (
@@ -39,13 +44,14 @@ export default function SeccionNav() {
           Usuarios
         </NavLink>
       )}
-      {/* Cuando exista Reportes, se agrega igual:
-      {esAdmin && (
-        <NavLink to="/reportes" className={({ isActive }) => "seccion-nav-link" + (isActive ? " is-active" : "")}>
+      {puedeVerReportes && enLinea && (
+        <NavLink
+          to="/reportes"
+          className={({ isActive }) => "seccion-nav-link" + (isActive ? " is-active" : "")}
+        >
           Reportes
         </NavLink>
       )}
-      */}
     </nav>
   );
 }
